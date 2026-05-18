@@ -771,7 +771,12 @@ body {
 @media (max-width: 760px) {
   .main-grid { grid-template-columns: 1fr; padding: 12px; }
   .header { flex-direction: column; gap: 10px; padding: 12px; }
-  .header-right { flex-wrap: wrap; justify-content: center; }
+  .header-right { flex-wrap: nowrap; justify-content: center; gap: 8px; width: 100%; }
+  .live-price-box { padding: 6px 10px; gap: 6px; }
+  .live-price { font-size: 0.95rem; }
+  .live-label { font-size: 0.55rem; }
+  .live-change { font-size: 0.65rem; }
+  .header-time { font-size: 0.75rem; white-space: nowrap; }
   .result-hero-value { font-size: 2.8rem; }
   .be-grid { grid-template-columns: 1fr 1fr; }
   .tv-container { height: 380px; padding: 0 12px; }
