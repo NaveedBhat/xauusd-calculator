@@ -28,7 +28,7 @@ const state = {
 const $ = id => document.getElementById(id);
 const $$ = sel => document.querySelectorAll(sel);
 
-// ── LIVE CLOCK & REAL-TIME PRICE (PAXGUSDT / XAUUSD PROXY) ─────────────
+// ── LIVE CLOCK & REAL-TIME OANDA XAUUSD PRICE (FINNHUB) ────────────────
 function updateClock() {
   const now = new Date();
   $('headerTime').textContent = now.toLocaleTimeString('en-US', { hour12: false });
@@ -36,23 +36,50 @@ function updateClock() {
 setInterval(updateClock, 1000);
 updateClock();
 
+// PASTE YOUR FULL FINNHUB API KEY HERE
+const FINNHUB_API_KEY = 'PASTE_YOUR_API_KEY_HERE';
+
+let sessionInitialPrice = null;
+
 function connectLivePrice() {
-  // Using Binance PAXGUSDT (Pax Gold) as a highly accurate proxy for XAUUSD Spot price.
-  // It tracks spot gold prices closely and provides a free public WebSocket with no API key required.
-  const ws = new WebSocket('wss://stream.binance.com:9443/ws/paxgusdt@ticker');
+  if (FINNHUB_API_KEY === 'PASTE_YOUR_API_KEY_HERE') {
+    alert("API KEY MISSING: Please open js/app.js and paste your Finnhub API Key on line 39!");
+    console.error("API KEY MISSING: Please paste your Finnhub API Key in app.js");
+    return;
+  }
+
+  // Connecting to Finnhub's Live WebSocket for exact OANDA XAU_USD data
+  const ws = new WebSocket(`wss://ws.finnhub.io?token=${FINNHUB_API_KEY}`);
+
+  ws.onopen = () => {
+    console.log("Connected to Finnhub!");
+    // Subscribe to OANDA XAUUSD
+    ws.send(JSON.stringify({'type':'subscribe', 'symbol': 'OANDA:XAU_USD'}));
+  };
   
   ws.onmessage = (event) => {
-    const data = JSON.parse(event.data);
-    const newPrice = parseFloat(data.c); // current price
-    const changePct = parseFloat(data.P); // 24hr price change percent
+    const response = JSON.parse(event.data);
     
-    state.livePrice = newPrice;
-    
-    $('livePrice').textContent = state.livePrice.toFixed(2);
-    
-    const changeEl = $('liveChange');
-    changeEl.textContent = (changePct >= 0 ? '+' : '') + changePct.toFixed(2) + '%';
-    changeEl.style.color = changePct >= 0 ? 'var(--green)' : 'var(--red)';
+    // Check if it's a trade update
+    if (response.type === 'trade' && response.data && response.data.length > 0) {
+      const latestTrade = response.data[0]; // get the most recent trade in the payload
+      const newPrice = parseFloat(latestTrade.p); // trade price
+      
+      // Store the first price we see to calculate session % change
+      if (sessionInitialPrice === null) {
+        sessionInitialPrice = newPrice;
+      }
+      
+      const changePct = ((newPrice - sessionInitialPrice) / sessionInitialPrice) * 100;
+      
+      state.livePrice = newPrice;
+      
+      $('livePrice').textContent = state.livePrice.toFixed(2);
+      
+      const changeEl = $('liveChange');
+      changeEl.textContent = (changePct >= 0 ? '+' : '') + changePct.toFixed(4) + '%';
+      changeEl.style.color = changePct >= 0 ? 'var(--green)' : 'var(--red)';
+    }
   };
   
   ws.onclose = () => {
