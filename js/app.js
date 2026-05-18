@@ -532,15 +532,8 @@ function renderHistoryTable() {
     const tp = parseFloat(t.tpPips) || 0;
     const pipVal = lots * 10;
 
-    // Randomly mark older trades as win/loss for demo
     let status = t.status;
     let pl = t.pl;
-    if (i < state.tradeLog.length - 1 && status === 'open') {
-      t.status = Math.random() > 0.45 ? 'win' : 'loss';
-      t.pl = t.status === 'win' ? (pipVal * tp).toFixed(2) : (-pipVal * sl).toFixed(2);
-      status = t.status;
-      pl = t.pl;
-    }
 
     const plNum = parseFloat(pl);
     return `
