@@ -28,27 +28,44 @@ const state = {
 const $ = id => document.getElementById(id);
 const $$ = sel => document.querySelectorAll(sel);
 
-// ── LIVE CLOCK & SIMULATED PRICE ───────────────────────────────────────
+// ── LIVE CLOCK & REAL-TIME PRICE (PAXGUSDT / XAUUSD PROXY) ─────────────
 function updateClock() {
   const now = new Date();
   $('headerTime').textContent = now.toLocaleTimeString('en-US', { hour12: false });
 }
+setInterval(updateClock, 1000);
+updateClock();
 
-function simulateLivePrice() {
-  const drift = (Math.random() - 0.5) * 0.8;
-  state.livePrice = Math.max(1800, Math.min(3500, state.livePrice + drift));
-  const prevPrice = state.livePrice - drift;
-  const change = ((state.livePrice - prevPrice) / prevPrice * 100);
-  $('livePrice').textContent = state.livePrice.toFixed(2);
-  const changeEl = $('liveChange');
-  changeEl.textContent = (change >= 0 ? '+' : '') + change.toFixed(4) + '%';
-  changeEl.style.color = change >= 0 ? 'var(--green)' : 'var(--red)';
+function connectLivePrice() {
+  // Using Binance PAXGUSDT (Pax Gold) as a highly accurate proxy for XAUUSD Spot price.
+  // It tracks spot gold prices closely and provides a free public WebSocket with no API key required.
+  const ws = new WebSocket('wss://stream.binance.com:9443/ws/paxgusdt@ticker');
+  
+  ws.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    const newPrice = parseFloat(data.c); // current price
+    const changePct = parseFloat(data.P); // 24hr price change percent
+    
+    state.livePrice = newPrice;
+    
+    $('livePrice').textContent = state.livePrice.toFixed(2);
+    
+    const changeEl = $('liveChange');
+    changeEl.textContent = (changePct >= 0 ? '+' : '') + changePct.toFixed(2) + '%';
+    changeEl.style.color = changePct >= 0 ? 'var(--green)' : 'var(--red)';
+  };
+  
+  ws.onclose = () => {
+    console.log("WebSocket disconnected. Reconnecting in 5s...");
+    setTimeout(connectLivePrice, 5000);
+  };
+  
+  ws.onerror = (err) => {
+    console.error("WebSocket Error:", err);
+  };
 }
 
-setInterval(updateClock, 1000);
-setInterval(simulateLivePrice, 1800);
-updateClock();
-simulateLivePrice();
+connectLivePrice();
 
 // ── TOGGLE SETUP ───────────────────────────────────────────────────────
 function setupToggle(groupId, stateKey, onChange) {
