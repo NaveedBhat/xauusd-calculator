@@ -114,7 +114,8 @@ function connectLivePrice() {
 
     // Check if it's a trade update
     if (response.type === 'trade' && response.data && response.data.length > 0) {
-      const latestTrade = response.data[0]; // get the most recent trade in the payload
+      // Finnhub batches trades. The LAST element is the most recent.
+      const latestTrade = response.data[response.data.length - 1];
       const newPrice = parseFloat(latestTrade.p); // trade price
 
       // Store the first price we see to calculate session % change
