@@ -6,12 +6,19 @@
 
 // ── CONSTANTS ──────────────────────────────────────────────────────────
 const XAUUSD = {
-  pipValue: 0.10,  // per 0.01 lot per pip
-  lotSize: 100,   // oz per standard lot
+  pipValue: 0.10,
+  lotSize: 100,
   standardLot: 100,
   miniLot: 10,
   microLot: 1,
 };
+
+// API KEY
+const FINNHUB_API_KEY = 'd85j71pr01qitd92913gd85j71pr01qitd929140';
+
+// ── ELEMENT REFS ──────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const $$ = sel => document.querySelectorAll(sel);
 
 // ── STATE ──────────────────────────────────────────────────────────────
 const state = {
@@ -81,21 +88,6 @@ async function fetchExchangeRate(targetCurrency) {
   } catch(e) { console.error("Rate fetch failed", e); }
   calculate();
 }
-
-// ── ELEMENT REFS ───────────────────────────────────────────────────────
-const $ = id => document.getElementById(id);
-const $$ = sel => document.querySelectorAll(sel);
-
-// ── LIVE CLOCK & REAL-TIME OANDA XAUUSD PRICE (FINNHUB) ────────────────
-function updateClock() {
-  const now = new Date();
-  $('headerTime').textContent = now.toLocaleTimeString('en-US', { hour12: false });
-}
-setInterval(updateClock, 1000);
-updateClock();
-
-// PASTE YOUR FULL FINNHUB API KEY HERE
-const FINNHUB_API_KEY = 'd85j71pr01qitd92913gd85j71pr01qitd929140';
 
 let sessionInitialPrice = null;
 
@@ -169,6 +161,14 @@ function connectLivePrice() {
     console.error("WebSocket Error:", err);
   };
 }
+
+// ── LIVE CLOCK ──────────────────────────────────────────────────────────
+function updateClock() {
+  const now = new Date();
+  $('headerTime').textContent = now.toLocaleTimeString('en-US', { hour12: false });
+}
+setInterval(updateClock, 1000);
+updateClock();
 
 connectLivePrice();
 
@@ -253,16 +253,11 @@ function getSLInPips() {
     case 'pips':
       return parseFloat($('slPips').value) || 0;
     case 'dollars': {
+      // SL in dollars directly: use risk / risk ratio approach
+      // For XAU: lots = risk / (pips * 10), and SL$ should equal risk
+      // So treat SL dollars as a fixed pip value directly
       const slUSD = parseFloat($('slDollars').value) || 0;
-      // $1 SL in USD = 10 pips for 0.01 lot, so derive from lot value
-      // We'll compute: pipValue per lot at standard lot = slUSD / (lots * 0.10)
-      // But we don't know lots yet — use the risk amount to infer pips
-      // pipValue per pip per standard lot = $10
-      // SL$ = lots * 10 * pips → pips = SL$ / (lots * 10)
-      // But lots depends on pips — so solve: lots = risk / (pips * pipValPerLot)
-      // Use dollars directly: pip value at 0.01 lot = $0.10
-      // SL in pips: slUSD / (risk/slUSD) — no, simplify:
-      // We'll treat: pips = slUSD * 10  (because $1 = 10 pips at 0.01 lot level)
+      // $1 pip value at 0.01 lot, so slUSD maps to slUSD * 10 pips at micro scale
       return slUSD * 10;
     }
     case 'price': {
