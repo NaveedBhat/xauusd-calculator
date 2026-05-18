@@ -831,3 +831,21 @@ body {
   background: var(--gold-dim);
   box-shadow: 0 0 5px var(--gold);
 }
+
+.be-source-badge {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  letter-spacing: 0.12em;
+  color: var(--cyan);
+  background: var(--cyan-dim);
+  border: 1px solid rgba(0,229,255,0.25);
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-bottom: 4px;
+}
+.be-source-badge.manual {
+  color: var(--text-dim);
+  background: transparent;
+  border-color: var(--border);
+}

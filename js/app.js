@@ -428,28 +428,53 @@ function updateMultiTP(lots, pipValPerLot) {
 function updateBreakEven() {
   const tpPips = parseFloat($('tpPips').value) || 0;
   const slPips = getSLInPips();
-  const winRate = parseFloat($('winRate').value) / 100 || 0.5;
+
+  // --- Pull win rate from real trade history if available ---
+  const closed = state.tradeLog.filter(t => t.status !== 'open');
+  const wins = closed.filter(t => t.status === 'win');
+  let winRate;
+  let fromHistory = false;
+
+  if (closed.length >= 5) {
+    winRate = wins.length / closed.length;
+    fromHistory = true;
+    $('winRate').value = (winRate * 100).toFixed(0);
+  } else {
+    winRate = parseFloat($('winRate').value) / 100 || 0.5;
+    fromHistory = false;
+  }
+
+  // Update source badge
+  const badge = $('beSourceBadge');
+  const sourceTag = $('winRateSource');
+  const hint = $('winRateHint');
+  if (badge) {
+    badge.textContent = fromHistory
+      ? `📊 FROM HISTORY (${closed.length} trades)`
+      : '✎ MANUAL INPUT';
+    badge.className = fromHistory ? 'be-source-badge' : 'be-source-badge manual';
+  }
+  if (sourceTag) sourceTag.textContent = fromHistory ? 'FROM HISTORY' : 'MANUAL';
+  if (hint) hint.textContent = fromHistory
+    ? `Based on ${wins.length} wins / ${closed.length} closed trades`
+    : 'Log 5+ closed trades and win rate auto-updates from history';
 
   if (tpPips <= 0 || slPips <= 0) return;
 
   const rr = tpPips / slPips;
 
-  // Min win rate to break even: loss / (profit + loss)
   const beWR = (1 / (1 + rr)) * 100;
   $('beWinRate').textContent = beWR.toFixed(1) + '%';
   $('beWinRate').style.color = winRate * 100 > beWR ? 'var(--green)' : 'var(--red)';
 
-  // Expected Value
   const ev = (winRate * rr) - (1 - winRate);
   $('beEV').textContent = ev.toFixed(3);
   $('beEV').style.color = ev > 0 ? 'var(--green)' : 'var(--red)';
 
-  // Kelly Criterion: f = W - (1-W)/R
   const kelly = winRate - (1 - winRate) / rr;
   $('beKelly').textContent = (kelly * 100).toFixed(1) + '%';
   $('beKelly').style.color = kelly > 0 ? 'var(--green)' : 'var(--red)';
   
-  // Expose for "Apply Kelly" button
   state.currentKellyPct = kelly > 0 ? kelly * 100 : 0;
 }
 
@@ -570,6 +595,9 @@ function updateHistoryStats() {
   plEl.textContent = (totalPL >= 0 ? '+$' : '-$') + Math.abs(totalPL).toFixed(2);
   plEl.style.color = totalPL >= 0 ? 'var(--green)' : 'var(--red)';
   $('statRR').textContent = avgRR.toFixed(2);
+
+  // Sync Break-Even Calculator whenever history changes
+  updateBreakEven();
 }
 
 // ── WIRE UP ALL INPUTS ─────────────────────────────────────────────────
@@ -589,6 +617,36 @@ $$('.mtp-inp').forEach(inp => {
     updateMultiTP(lots, 10);
   });
 });
+
+// ── TP PRICE LEVEL ⇒ AUTO-FILL PIPS ──────────────────────────────────────
+function wireTPPriceInputs() {
+  const tpPriceEl = $('tpPrice');
+  const tpPriceLevelEl = $('tpPriceLevel');
+
+  function convertTPPriceToRRPips(tpPriceInput) {
+    tpPriceInput.addEventListener('input', () => {
+      const tpPriceVal = parseFloat(tpPriceInput.value);
+      if (!tpPriceVal || tpPriceVal <= 0) return;
+
+      // Use entry price if available (Price Level mode), else use live price
+      let entryP = parseFloat($('entryPrice') ? $('entryPrice').value : null) || state.livePrice;
+      if (state.slMode !== 'price') entryP = state.livePrice;
+
+      const pipDiff = Math.abs(tpPriceVal - entryP) * 10; // 1 pip = $0.10 on XAU
+      const calcPips = Math.round(pipDiff);
+
+      if (calcPips > 0) {
+        $('tpPips').value = calcPips;
+        const hint = tpPriceInput === tpPriceLevelEl ? $('tpPipsCalc') : $('tpPipsFromPrice');
+        if (hint) hint.textContent = `= ${calcPips} pips from entry`;
+        calculate();
+      }
+    });
+  }
+
+  if (tpPriceEl) convertTPPriceToRRPips(tpPriceEl);
+  if (tpPriceLevelEl) convertTPPriceToRRPips(tpPriceLevelEl);
+}
 
 // ── CALCULATE BUTTON ───────────────────────────────────────────────────
 $('calcBtn').addEventListener('click', () => {
@@ -647,8 +705,9 @@ function initTradingView() {
 loadInputs();
 calculate();
 updateRiskBadge();
+wireTPPriceInputs();
 
-// CRITICAL BUG FIX: Render UI for logged trades on page load
+// Render UI for logged trades on page load
 if (state.tradeLog.length > 0) {
   renderLog();
   renderHistoryTable();
