@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>XAUUSD Pro Calculator</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="scanline"></div>
+  <div class="noise"></div>
+
+  <header class="header">
+    <div class="header-left">
+      <div class="logo-block">
+        <span class="logo-icon">⬡</span>
+        <div>
+          <div class="logo-title">XAUUSD</div>
+          <div class="logo-sub">PRO POSITION CALCULATOR</div>
+        </div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="live-price-box">
+        <span class="live-dot"></span>
+        <span class="live-label">GOLD SPOT</span>
+        <span class="live-price" id="livePrice">---.--</span>
+        <span class="live-change" id="liveChange">+0.00%</span>
+      </div>
+      <div class="header-time" id="headerTime">--:--:--</div>
+    </div>
+  </header>
+
+  <main class="main-grid">
+
+    <!-- LEFT PANEL: Input -->
+    <section class="panel panel-input">
+      <div class="panel-label">▸ TRADE PARAMETERS</div>
+
+      <div class="input-group">
+        <label class="input-label">ACCOUNT BALANCE <span class="unit-tag">USD</span></label>
+        <div class="input-wrap">
+          <span class="input-prefix">$</span>
+          <input type="number" id="accountBalance" class="inp" value="10000" min="0" step="100" />
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label class="input-label">RISK AMOUNT <span class="unit-tag">USD</span></label>
+        <div class="risk-row">
+          <div class="input-wrap" style="flex:1">
+            <span class="input-prefix">$</span>
+            <input type="number" id="riskAmount" class="inp" value="50" min="0" step="1" />
+          </div>
+          <div class="risk-pct-badge" id="riskPctBadge">0.50%</div>
+        </div>
+        <div class="risk-slider-wrap">
+          <input type="range" id="riskSlider" class="risk-slider" min="0.1" max="10" step="0.1" value="0.5" />
+          <div class="slider-labels">
+            <span>0.1%</span><span>2.5%</span><span>5%</span><span>10%</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider-line"></div>
+
+      <div class="input-group">
+        <label class="input-label">STOP LOSS MODE</label>
+        <div class="toggle-group" id="slModeToggle">
+          <button class="tog active" data-mode="pips">PIPS</button>
+          <button class="tog" data-mode="dollars">DOLLARS ($)</button>
+          <button class="tog" data-mode="price">PRICE LEVEL</button>
+        </div>
+      </div>
+
+      <div class="input-group" id="slPipsGroup">
+        <label class="input-label">STOP LOSS <span class="unit-tag">PIPS</span></label>
+        <div class="input-wrap">
+          <input type="number" id="slPips" class="inp" value="50" min="0.1" step="1" />
+          <span class="input-suffix">pips</span>
+        </div>
+        <div class="helper-text">1 pip = $0.10 per 0.01 lot on XAUUSD</div>
+      </div>
+
+      <div class="input-group hidden" id="slDollarsGroup">
+        <label class="input-label">STOP LOSS <span class="unit-tag">USD VALUE</span></label>
+        <div class="input-wrap">
+          <span class="input-prefix">$</span>
+          <input type="number" id="slDollars" class="inp" value="5" min="0.01" step="0.01" />
+        </div>
+      </div>
+
+      <div class="input-group hidden" id="slPriceGroup">
+        <label class="input-label">ENTRY PRICE</label>
+        <div class="input-wrap">
+          <input type="number" id="entryPrice" class="inp" value="2350.00" step="0.01" />
+        </div>
+        <label class="input-label" style="margin-top:10px">STOP LOSS PRICE</label>
+        <div class="input-wrap">
+          <input type="number" id="slPrice" class="inp" value="2345.00" step="0.01" />
+        </div>
+      </div>
+
+      <div class="divider-line"></div>
+
+      <div class="input-group">
+        <label class="input-label">TRADE DIRECTION</label>
+        <div class="toggle-group" id="directionToggle">
+          <button class="tog active buy" data-dir="buy">▲ BUY / LONG</button>
+          <button class="tog sell" data-dir="sell">▼ SELL / SHORT</button>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label class="input-label">LOT SIZE TYPE</label>
+        <div class="toggle-group" id="lotTypeToggle">
+          <button class="tog active" data-lot="standard">STANDARD</button>
+          <button class="tog" data-lot="mini">MINI</button>
+          <button class="tog" data-lot="micro">MICRO</button>
+        </div>
+      </div>
+
+      <button class="calc-btn" id="calcBtn">
+        <span class="calc-btn-icon">⚡</span> CALCULATE POSITION
+      </button>
+    </section>
+
+    <!-- CENTER PANEL: Results -->
+    <section class="panel panel-results">
+      <div class="panel-label">▸ POSITION OUTPUT</div>
+
+      <div class="result-hero">
+        <div class="result-hero-label">POSITION SIZE</div>
+        <div class="result-hero-value" id="positionSize">0.10</div>
+        <div class="result-hero-unit" id="positionUnit">LOTS</div>
+        <div class="result-hero-sub" id="positionSub">= 0.10 standard lots</div>
+      </div>
+
+      <div class="result-grid">
+        <div class="result-card">
+          <div class="rc-label">RISK AMOUNT</div>
+          <div class="rc-value" id="resRisk">$50.00</div>
+        </div>
+        <div class="result-card">
+          <div class="rc-label">RISK %</div>
+          <div class="rc-value" id="resRiskPct">0.50%</div>
+        </div>
+        <div class="result-card">
+          <div class="rc-label">SL IN PIPS</div>
+          <div class="rc-value" id="resSLPips">50</div>
+        </div>
+        <div class="result-card">
+          <div class="rc-label">SL IN USD</div>
+          <div class="rc-value" id="resSLUSD">$5.00</div>
+        </div>
+        <div class="result-card">
+          <div class="rc-label">UNITS</div>
+          <div class="rc-value" id="resUnits">10,000</div>
+        </div>
+        <div class="result-card">
+          <div class="rc-label">PIP VALUE</div>
+          <div class="rc-value" id="resPipValue">$1.00</div>
+        </div>
+      </div>
+
+      <div class="divider-line"></div>
+
+      <!-- R:R Calculator -->
+      <div class="rr-section">
+        <div class="panel-label">▸ RISK:REWARD CALCULATOR</div>
+        <div class="rr-inputs">
+          <div class="input-group" style="flex:1">
+            <label class="input-label">TAKE PROFIT <span class="unit-tag">PIPS</span></label>
+            <input type="number" id="tpPips" class="inp" value="100" min="1" step="1" />
+          </div>
+          <div class="rr-arrow">→</div>
+          <div class="rr-display">
+            <div class="rr-ratio-label">R:R RATIO</div>
+            <div class="rr-ratio-value" id="rrRatio">1:2.00</div>
+            <div class="rr-grade" id="rrGrade">GOOD</div>
+          </div>
+        </div>
+        <div class="rr-bars">
+          <div class="rr-bar-row">
+            <span class="rr-bar-label">SL</span>
+            <div class="rr-bar-track"><div class="rr-bar sl-bar" id="slBar" style="width:33%"></div></div>
+            <span class="rr-bar-val" id="slBarVal">50 pips</span>
+          </div>
+          <div class="rr-bar-row">
+            <span class="rr-bar-label">TP</span>
+            <div class="rr-bar-track"><div class="rr-bar tp-bar" id="tpBar" style="width:66%"></div></div>
+            <span class="rr-bar-val" id="tpBarVal">100 pips</span>
+          </div>
+        </div>
+        <div class="rr-profit-box">
+          <div class="rp-item">
+            <span class="rp-label">POTENTIAL PROFIT</span>
+            <span class="rp-value green" id="potentialProfit">$100.00</span>
+          </div>
+          <div class="rp-item">
+            <span class="rp-label">POTENTIAL LOSS</span>
+            <span class="rp-value red" id="potentialLoss">-$50.00</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT PANEL: Advanced Tools -->
+    <section class="panel panel-advanced">
+      <div class="panel-label">▸ ADVANCED TOOLS</div>
+
+      <!-- Multi-target TP -->
+      <div class="tool-block">
+        <div class="tool-title">📐 MULTI-TARGET LEVELS</div>
+        <div class="multi-tp-grid" id="multiTPGrid">
+          <div class="mtp-row">
+            <span class="mtp-label">TP1 (25%)</span>
+            <input type="number" class="inp mtp-inp" data-pct="25" placeholder="pips" value="50" />
+            <span class="mtp-profit" id="mtp0">--</span>
+          </div>
+          <div class="mtp-row">
+            <span class="mtp-label">TP2 (50%)</span>
+            <input type="number" class="inp mtp-inp" data-pct="50" placeholder="pips" value="100" />
+            <span class="mtp-profit" id="mtp1">--</span>
+          </div>
+          <div class="mtp-row">
+            <span class="mtp-label">TP3 (25%)</span>
+            <input type="number" class="inp mtp-inp" data-pct="25" placeholder="pips" value="200" />
+            <span class="mtp-profit" id="mtp2">--</span>
+          </div>
+        </div>
+        <div class="mtp-total">TOTAL WEIGHTED PROFIT: <span id="mtpTotal" class="green">--</span></div>
+      </div>
+
+      <div class="divider-line"></div>
+
+      <!-- Break-even calculator -->
+      <div class="tool-block">
+        <div class="tool-title">⚖️ BREAK-EVEN CALCULATOR</div>
+        <div class="be-grid">
+          <div class="be-item">
+            <div class="be-label">Win Rate to B/E</div>
+            <div class="be-val" id="beWinRate">--</div>
+          </div>
+          <div class="be-item">
+            <div class="be-label">Expected Value</div>
+            <div class="be-val" id="beEV">--</div>
+          </div>
+          <div class="be-item">
+            <div class="be-label">Kelly Criterion</div>
+            <div class="be-val" id="beKelly">--</div>
+          </div>
+        </div>
+        <div class="input-group" style="margin-top:10px">
+          <label class="input-label">YOUR WIN RATE %</label>
+          <div class="input-wrap">
+            <input type="number" id="winRate" class="inp" value="55" min="1" max="99" step="1" />
+            <span class="input-suffix">%</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider-line"></div>
+
+      <!-- Trade Journal -->
+      <div class="tool-block">
+        <div class="tool-title">📒 TRADE LOG</div>
+        <button class="log-btn" id="logTradeBtn">+ LOG THIS TRADE</button>
+        <div class="trade-log" id="tradeLog">
+          <div class="log-empty">No trades logged yet.</div>
+        </div>
+        <button class="log-btn secondary" id="clearLogBtn">CLEAR LOG</button>
+      </div>
+
+      <div class="divider-line"></div>
+
+      <!-- Margin Calculator -->
+      <div class="tool-block">
+        <div class="tool-title">💰 MARGIN REQUIRED</div>
+        <div class="input-group">
+          <label class="input-label">LEVERAGE</label>
+          <div class="toggle-group" id="leverageToggle">
+            <button class="tog active" data-lev="100">1:100</button>
+            <button class="tog" data-lev="200">1:200</button>
+            <button class="tog" data-lev="500">1:500</button>
+            <button class="tog" data-lev="1000">1:1000</button>
+          </div>
+        </div>
+        <div class="margin-result">
+          <div class="margin-item">
+            <span class="margin-label">MARGIN REQUIRED</span>
+            <span class="margin-val" id="marginRequired">--</span>
+          </div>
+          <div class="margin-item">
+            <span class="margin-label">FREE MARGIN</span>
+            <span class="margin-val" id="freeMargin">--</span>
+          </div>
+          <div class="margin-item">
+            <span class="margin-label">MARGIN LEVEL</span>
+            <span class="margin-val" id="marginLevel">--</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Trade History Table -->
+  <section class="history-section" id="historySection">
+    <div class="history-header">
+      <div class="panel-label">▸ SESSION TRADE HISTORY</div>
+      <div class="history-stats">
+        <span>TRADES: <b id="statTrades">0</b></span>
+        <span>WIN RATE: <b id="statWR">0%</b></span>
+        <span>TOTAL P/L: <b id="statPL" class="green">$0.00</b></span>
+        <span>AVG R:R: <b id="statRR">0.00</b></span>
+      </div>
+    </div>
+    <div class="history-table-wrap">
+      <table class="history-table" id="historyTable">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>TIME</th>
+            <th>DIR</th>
+            <th>LOTS</th>
+            <th>SL PIPS</th>
+            <th>TP PIPS</th>
+            <th>RISK $</th>
+            <th>RISK %</th>
+            <th>R:R</th>
+            <th>STATUS</th>
+            <th>P/L</th>
+          </tr>
+        </thead>
+        <tbody id="historyBody">
+          <tr><td colspan="11" class="empty-row">No trades logged. Calculate & log a trade above.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
