@@ -42,7 +42,8 @@ function saveInputs() {
     commission: $('commission') ? $('commission').value : '0',
     swap: $('swapFee') ? $('swapFee').value : '0',
     winRate: $('winRate').value,
-    tradeLog: state.tradeLog
+    tradeLog: state.tradeLog,
+    lastLivePrice: state.livePrice  // Cache last known price
   };
   localStorage.setItem('xauusd_data', JSON.stringify(data));
 }
@@ -56,7 +57,6 @@ function loadInputs() {
         $('accountCurrency').value = saved.currency;
         const symbols = {USD:'$', EUR:'€', GBP:'£', AUD:'A$', JPY:'¥', CAD:'C$'};
         $('currencySymbol').textContent = symbols[saved.currency] || '$';
-        // CRITICAL BUG FIX: Fetch exchange rate for saved currency on load
         fetchExchangeRate(saved.currency);
       }
       if(saved.riskAmount) $('riskAmount').value = saved.riskAmount;
@@ -64,8 +64,19 @@ function loadInputs() {
       if(saved.commission && $('commission')) $('commission').value = saved.commission;
       if(saved.swap && $('swapFee')) $('swapFee').value = saved.swap;
       if(saved.winRate) $('winRate').value = saved.winRate;
-      if(saved.tradeLog) {
-        state.tradeLog = saved.tradeLog;
+      if(saved.tradeLog) state.tradeLog = saved.tradeLog;
+
+      // ✅ INSTANT PRICE: Show last cached price immediately (0ms delay)
+      if (saved.lastLivePrice && saved.lastLivePrice > 100) {
+        state.livePrice = saved.lastLivePrice;
+        sessionInitialPrice = saved.lastLivePrice;
+        $('livePrice').textContent = saved.lastLivePrice.toFixed(2);
+        $('livePrice').style.fontSize = '';
+        $('livePrice').style.letterSpacing = '';
+        $('liveChange').textContent = '+0.0000%';
+        $('liveChange').style.color = 'var(--green)';
+        const dot = document.querySelector('.live-dot');
+        if (dot) { dot.style.background = 'var(--gold)'; dot.style.boxShadow = '0 0 8px var(--gold)'; }
       }
     }
   } catch(e) {}
@@ -121,12 +132,24 @@ function applyPrice(newPrice, changePct) {
   }
 }
 
-// ── REST PRICE FETCH (polling fallback) ───────────────────────────────
+// ── REST PRICE FETCH (polling fallback, CORS-safe) ──────────────────────────
 async function fetchRestPrice() {
+  // Primary: metals.live — free, no auth, CORS open (works from file:// too)
   try {
-    const res = await fetch(
-      `https://finnhub.io/api/v1/forex/rates?base=USD&token=${FINNHUB_API_KEY}`
-    );
+    const res = await fetch('https://api.metals.live/v1/spot/gold', { cache: 'no-store' });
+    const data = await res.json();
+    if (Array.isArray(data) && data[0] && data[0].gold > 0) {
+      const price = parseFloat(data[0].gold);
+      if (sessionInitialPrice === null) sessionInitialPrice = price;
+      const pct = ((price - sessionInitialPrice) / sessionInitialPrice) * 100;
+      applyPrice(price, pct);
+      return true;
+    }
+  } catch(e) {}
+
+  // Fallback: Finnhub forex rates (works from https:// served pages)
+  try {
+    const res = await fetch(`https://finnhub.io/api/v1/forex/rates?base=USD&token=${FINNHUB_API_KEY}`, { cache: 'no-store' });
     const data = await res.json();
     if (data && data.quote && data.quote['XAU'] && data.quote['XAU'] > 0) {
       const price = parseFloat((1 / data.quote['XAU']).toFixed(2));
