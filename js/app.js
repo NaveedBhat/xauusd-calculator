@@ -132,6 +132,31 @@ function connectLivePrice() {
       const changeEl = $('liveChange');
       changeEl.textContent = (changePct >= 0 ? '+' : '') + changePct.toFixed(4) + '%';
       changeEl.style.color = changePct >= 0 ? 'var(--green)' : 'var(--red)';
+
+      // Real-time margin updates without flashing the UI
+      if (state.lastCalc && state.lastCalc.lots) {
+        const balance = parseFloat($('accountBalance').value) * exchangeRate || 0;
+        const lots = parseFloat(state.lastCalc.lots);
+        const notionalValue = lots * XAUUSD.standardLot * state.livePrice;
+        const marginReq = notionalValue / state.leverage;
+        const freeMargin = balance - marginReq;
+        const marginLevel = marginReq > 0 ? (balance / marginReq * 100) : 0;
+        
+        const mReqEl = $('marginRequired');
+        if (mReqEl) mReqEl.textContent = '$' + marginReq.toFixed(2);
+        
+        const fMarginEl = $('freeMargin');
+        if (fMarginEl) {
+          fMarginEl.textContent = (freeMargin >= 0 ? '$' : '-$') + Math.abs(freeMargin).toFixed(2);
+          fMarginEl.style.color = freeMargin >= 0 ? 'var(--green)' : 'var(--red)';
+        }
+        
+        const mLevelEl = $('marginLevel');
+        if (mLevelEl) {
+          mLevelEl.textContent = marginLevel.toFixed(0) + '%';
+          mLevelEl.style.color = marginLevel > 500 ? 'var(--green)' : marginLevel > 200 ? 'var(--gold)' : 'var(--red)';
+        }
+      }
     }
   };
 
@@ -466,6 +491,7 @@ $('logTradeBtn').addEventListener('click', () => {
   renderLog();
   renderHistoryTable();
   updateHistoryStats();
+  saveInputs();
 });
 
 $('clearLogBtn').addEventListener('click', () => {
@@ -475,6 +501,7 @@ $('clearLogBtn').addEventListener('click', () => {
     renderLog();
     renderHistoryTable();
     updateHistoryStats();
+    saveInputs();
   }
 });
 
