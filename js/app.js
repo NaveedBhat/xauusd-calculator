@@ -672,21 +672,34 @@ function wireTPPriceInputs() {
   function convertTPPriceToRRPips(tpPriceInput) {
     tpPriceInput.addEventListener('input', () => {
       const tpPriceVal = parseFloat(tpPriceInput.value);
+      const hint = tpPriceInput === tpPriceLevelEl ? $('tpPipsCalc') : $('tpPipsFromPrice');
       if (!tpPriceVal || tpPriceVal <= 0) return;
 
-      // Use entry price if available (Price Level mode), else use live price
-      let entryP = parseFloat($('entryPrice') ? $('entryPrice').value : null) || state.livePrice;
-      if (state.slMode !== 'price') entryP = state.livePrice;
+      // CRITICAL FIX: Do NOT calculate if live price is not yet known
+      if (state.livePrice <= 0) {
+        if (hint) hint.textContent = '⚠ Waiting for live price to sync...';
+        return;
+      }
+
+      // Use entry price if in Price Level SL mode, else use current live price
+      let entryP = state.livePrice;
+      if (state.slMode === 'price') {
+        const entryField = parseFloat($('entryPrice').value);
+        if (entryField > 0) entryP = entryField;
+      }
 
       const pipDiff = Math.abs(tpPriceVal - entryP) * 10; // 1 pip = $0.10 on XAU
       const calcPips = Math.round(pipDiff);
 
-      if (calcPips > 0) {
-        $('tpPips').value = calcPips;
-        const hint = tpPriceInput === tpPriceLevelEl ? $('tpPipsCalc') : $('tpPipsFromPrice');
-        if (hint) hint.textContent = `= ${calcPips} pips from entry`;
-        calculate();
+      // Sanity check — reject obviously wrong values (entry price probably 0)
+      if (calcPips <= 0 || calcPips > 10000) {
+        if (hint) hint.textContent = '⚠ Invalid — check your TP price vs entry price';
+        return;
       }
+
+      $('tpPips').value = calcPips;
+      if (hint) hint.textContent = `= ${calcPips} pips from entry (${entryP.toFixed(2)})`;
+      calculate();
     });
   }
 
