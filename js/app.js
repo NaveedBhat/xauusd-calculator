@@ -42,9 +42,7 @@ function saveInputs() {
     commission: $('commission') ? $('commission').value : '0',
     swap: $('swapFee') ? $('swapFee').value : '0',
     winRate: $('winRate').value,
-    tradeLog: state.tradeLog,
-    // Only cache the price if a REAL live price has been received
-    lastLivePrice: priceConnected ? state.livePrice : null
+    tradeLog: state.tradeLog
   };
   localStorage.setItem('xauusd_data', JSON.stringify(data));
 }
@@ -66,20 +64,15 @@ function loadInputs() {
       if(saved.swap && $('swapFee')) $('swapFee').value = saved.swap;
       if(saved.winRate) $('winRate').value = saved.winRate;
       if(saved.tradeLog) state.tradeLog = saved.tradeLog;
+    }
+  } catch(e) {}
 
-      // INSTANT PRICE: Show last cached price immediately (0ms delay)
-      // Only use it if it looks like a real gold price (>1000 USD/oz)
-      if (saved.lastLivePrice && saved.lastLivePrice > 1000) {
-        state.livePrice = saved.lastLivePrice;
-        sessionInitialPrice = saved.lastLivePrice;
-        $('livePrice').textContent = saved.lastLivePrice.toFixed(2);
-        $('livePrice').style.fontSize = '';
-        $('livePrice').style.letterSpacing = '';
-        $('liveChange').textContent = '+0.0000%';
-        $('liveChange').style.color = 'var(--green)';
-        const dot = document.querySelector('.live-dot');
-        if (dot) { dot.style.background = 'var(--gold)'; dot.style.boxShadow = '0 0 8px var(--gold)'; }
-      }
+  // One-time cleanup: wipe any stale cached price from old code
+  try {
+    const raw = JSON.parse(localStorage.getItem('xauusd_data'));
+    if (raw && raw.lastLivePrice !== undefined) {
+      delete raw.lastLivePrice;
+      localStorage.setItem('xauusd_data', JSON.stringify(raw));
     }
   } catch(e) {}
 }
