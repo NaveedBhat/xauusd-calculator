@@ -6,22 +6,22 @@
 
 // ── CONSTANTS ──────────────────────────────────────────────────────────
 const XAUUSD = {
-  pipValue:       0.10,  // per 0.01 lot per pip
-  lotSize:        100,   // oz per standard lot
-  standardLot:    100,
-  miniLot:        10,
-  microLot:       1,
+  pipValue: 0.10,  // per 0.01 lot per pip
+  lotSize: 100,   // oz per standard lot
+  standardLot: 100,
+  miniLot: 10,
+  microLot: 1,
 };
 
 // ── STATE ──────────────────────────────────────────────────────────────
 const state = {
-  slMode:    'pips',     // 'pips' | 'dollars' | 'price'
+  slMode: 'pips',     // 'pips' | 'dollars' | 'price'
   direction: 'buy',
-  lotType:   'standard',
-  leverage:  100,
-  tradeLog:  [],
+  lotType: 'standard',
+  leverage: 100,
+  tradeLog: [],
   livePrice: 2350.00,
-  lastCalc:  null,
+  lastCalc: null,
 };
 
 // ── ELEMENT REFS ───────────────────────────────────────────────────────
@@ -37,56 +37,50 @@ setInterval(updateClock, 1000);
 updateClock();
 
 // PASTE YOUR FULL FINNHUB API KEY HERE
-const FINNHUB_API_KEY = 'PASTE_YOUR_API_KEY_HERE';
+const FINNHUB_API_KEY = 'd85j71pr01qitd92913gd85j71pr01qitd929140';
 
 let sessionInitialPrice = null;
 
 function connectLivePrice() {
-  if (FINNHUB_API_KEY === 'PASTE_YOUR_API_KEY_HERE') {
-    alert("API KEY MISSING: Please open js/app.js and paste your Finnhub API Key on line 39!");
-    console.error("API KEY MISSING: Please paste your Finnhub API Key in app.js");
-    return;
-  }
-
   // Connecting to Finnhub's Live WebSocket for exact OANDA XAU_USD data
   const ws = new WebSocket(`wss://ws.finnhub.io?token=${FINNHUB_API_KEY}`);
 
   ws.onopen = () => {
     console.log("Connected to Finnhub!");
     // Subscribe to OANDA XAUUSD
-    ws.send(JSON.stringify({'type':'subscribe', 'symbol': 'OANDA:XAU_USD'}));
+    ws.send(JSON.stringify({ 'type': 'subscribe', 'symbol': 'OANDA:XAU_USD' }));
   };
-  
+
   ws.onmessage = (event) => {
     const response = JSON.parse(event.data);
-    
+
     // Check if it's a trade update
     if (response.type === 'trade' && response.data && response.data.length > 0) {
       const latestTrade = response.data[0]; // get the most recent trade in the payload
       const newPrice = parseFloat(latestTrade.p); // trade price
-      
+
       // Store the first price we see to calculate session % change
       if (sessionInitialPrice === null) {
         sessionInitialPrice = newPrice;
       }
-      
+
       const changePct = ((newPrice - sessionInitialPrice) / sessionInitialPrice) * 100;
-      
+
       state.livePrice = newPrice;
-      
+
       $('livePrice').textContent = state.livePrice.toFixed(2);
-      
+
       const changeEl = $('liveChange');
       changeEl.textContent = (changePct >= 0 ? '+' : '') + changePct.toFixed(4) + '%';
       changeEl.style.color = changePct >= 0 ? 'var(--green)' : 'var(--red)';
     }
   };
-  
+
   ws.onclose = () => {
     console.log("WebSocket disconnected. Reconnecting in 5s...");
     setTimeout(connectLivePrice, 5000);
   };
-  
+
   ws.onerror = (err) => {
     console.error("WebSocket Error:", err);
   };
@@ -103,8 +97,8 @@ function setupToggle(groupId, stateKey, onChange) {
       group.querySelectorAll('.tog').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       const val = btn.dataset[stateKey === 'slMode' ? 'mode' :
-                               stateKey === 'direction' ? 'dir' :
-                               stateKey === 'lotType'   ? 'lot' : 'lev'];
+        stateKey === 'direction' ? 'dir' :
+          stateKey === 'lotType' ? 'lot' : 'lev'];
       state[stateKey] = val;
       if (onChange) onChange(val);
     });
@@ -116,9 +110,9 @@ setupToggle('slModeToggle', 'slMode', mode => {
   ['slPipsGroup', 'slDollarsGroup', 'slPriceGroup'].forEach(id => {
     $(id).classList.add('hidden');
   });
-  if (mode === 'pips')   $('slPipsGroup').classList.remove('hidden');
-  if (mode === 'dollars')$('slDollarsGroup').classList.remove('hidden');
-  if (mode === 'price')  $('slPriceGroup').classList.remove('hidden');
+  if (mode === 'pips') $('slPipsGroup').classList.remove('hidden');
+  if (mode === 'dollars') $('slDollarsGroup').classList.remove('hidden');
+  if (mode === 'price') $('slPriceGroup').classList.remove('hidden');
   calculate();
 });
 
@@ -153,9 +147,9 @@ accountBalance.addEventListener('input', () => {
 });
 
 function updateRiskBadge() {
-  const bal  = parseFloat(accountBalance.value) || 1;
+  const bal = parseFloat(accountBalance.value) || 1;
   const risk = parseFloat(riskAmount.value) || 0;
-  const pct  = (risk / bal * 100);
+  const pct = (risk / bal * 100);
   $('riskPctBadge').textContent = pct.toFixed(2) + '%';
   // Sync slider
   riskSlider.value = Math.min(10, pct);
@@ -181,8 +175,8 @@ function getSLInPips() {
     }
     case 'price': {
       const entry = parseFloat($('entryPrice').value) || 0;
-      const sl    = parseFloat($('slPrice').value) || 0;
-      const diff  = Math.abs(entry - sl);
+      const sl = parseFloat($('slPrice').value) || 0;
+      const diff = Math.abs(entry - sl);
       return diff * 10; // 1 pip = $0.10 per unit, 1 dollar = 10 pips on XAU
     }
     default: return 0;
@@ -190,9 +184,9 @@ function getSLInPips() {
 }
 
 function calculate() {
-  const balance   = parseFloat(accountBalance.value) || 0;
-  const risk      = parseFloat(riskAmount.value) || 0;
-  const slPips    = getSLInPips();
+  const balance = parseFloat(accountBalance.value) || 0;
+  const risk = parseFloat(riskAmount.value) || 0;
+  const slPips = getSLInPips();
 
   if (slPips <= 0 || risk <= 0) {
     $('positionSize').textContent = '0.00';
@@ -210,20 +204,20 @@ function calculate() {
   if (state.lotType === 'standard') {
     displayLots = lots;
     displayUnit = 'LOTS';
-    displaySub  = `= ${lots.toFixed(4)} standard lots`;
+    displaySub = `= ${lots.toFixed(4)} standard lots`;
   } else if (state.lotType === 'mini') {
     displayLots = lots * 10;
     displayUnit = 'MINI LOTS';
-    displaySub  = `= ${lots.toFixed(4)} standard lots`;
+    displaySub = `= ${lots.toFixed(4)} standard lots`;
   } else {
     displayLots = lots * 100;
     displayUnit = 'MICRO LOTS';
-    displaySub  = `= ${lots.toFixed(4)} standard lots`;
+    displaySub = `= ${lots.toFixed(4)} standard lots`;
   }
 
   // Derived values
-  const slUSD   = risk;
-  const units   = Math.round(lots * XAUUSD.standardLot * 1000) / 10; // notional oz-ish
+  const slUSD = risk;
+  const units = Math.round(lots * XAUUSD.standardLot * 1000) / 10; // notional oz-ish
   const pipValForPosition = lots * pipValPerLot;
   const riskPct = balance > 0 ? (risk / balance * 100) : 0;
 
@@ -240,14 +234,14 @@ function calculate() {
   setTimeout(() => heroEl.classList.remove('updated'), 600);
 
   $('positionUnit').textContent = displayUnit;
-  $('positionSub').textContent  = displaySub;
+  $('positionSub').textContent = displaySub;
 
   // Update result cards
-  $('resRisk').textContent    = '$' + risk.toFixed(2);
+  $('resRisk').textContent = '$' + risk.toFixed(2);
   $('resRiskPct').textContent = riskPct.toFixed(2) + '%';
-  $('resSLPips').textContent  = slPips.toFixed(1);
-  $('resSLUSD').textContent   = '$' + slUSD.toFixed(2);
-  $('resUnits').textContent   = (lots * 100000).toLocaleString('en-US', { maximumFractionDigits: 0 });
+  $('resSLPips').textContent = slPips.toFixed(1);
+  $('resSLUSD').textContent = '$' + slUSD.toFixed(2);
+  $('resUnits').textContent = (lots * 100000).toLocaleString('en-US', { maximumFractionDigits: 0 });
   $('resPipValue').textContent = '$' + pipValForPosition.toFixed(2);
 
   // R:R update
@@ -261,10 +255,10 @@ function calculate() {
 
   // Margin
   $('marginRequired').textContent = '$' + marginReq.toFixed(2);
-  $('freeMargin').textContent     = (freeMargin >= 0 ? '$' : '-$') + Math.abs(freeMargin).toFixed(2);
-  $('freeMargin').style.color     = freeMargin >= 0 ? 'var(--green)' : 'var(--red)';
-  $('marginLevel').textContent    = marginLevel.toFixed(0) + '%';
-  $('marginLevel').style.color    = marginLevel > 500 ? 'var(--green)' : marginLevel > 200 ? 'var(--gold)' : 'var(--red)';
+  $('freeMargin').textContent = (freeMargin >= 0 ? '$' : '-$') + Math.abs(freeMargin).toFixed(2);
+  $('freeMargin').style.color = freeMargin >= 0 ? 'var(--green)' : 'var(--red)';
+  $('marginLevel').textContent = marginLevel.toFixed(0) + '%';
+  $('marginLevel').style.color = marginLevel > 500 ? 'var(--green)' : marginLevel > 200 ? 'var(--gold)' : 'var(--red)';
 
   // Save last calc
   state.lastCalc = {
@@ -287,19 +281,19 @@ function updateRR(lots, slPips, pipValForPosition) {
 
   const ratio = tpPips / slPips;
   const potProfit = lots * 10 * tpPips;
-  const potLoss   = lots * 10 * slPips;
+  const potLoss = lots * 10 * slPips;
 
-  $('rrRatio').textContent     = '1:' + ratio.toFixed(2);
+  $('rrRatio').textContent = '1:' + ratio.toFixed(2);
   $('potentialProfit').textContent = '+$' + potProfit.toFixed(2);
-  $('potentialLoss').textContent   = '-$' + potLoss.toFixed(2);
+  $('potentialLoss').textContent = '-$' + potLoss.toFixed(2);
 
   // Grade
   const gradeEl = $('rrGrade');
   gradeEl.className = 'rr-grade';
-  if (ratio >= 3)      { gradeEl.textContent = 'EXCELLENT'; gradeEl.classList.add('excellent'); }
-  else if (ratio >= 2) { gradeEl.textContent = 'GOOD';      gradeEl.classList.add('good'); }
-  else if (ratio >= 1.5){ gradeEl.textContent = 'FAIR';    gradeEl.classList.add('fair'); }
-  else                 { gradeEl.textContent = 'POOR';      gradeEl.classList.add('poor'); }
+  if (ratio >= 3) { gradeEl.textContent = 'EXCELLENT'; gradeEl.classList.add('excellent'); }
+  else if (ratio >= 2) { gradeEl.textContent = 'GOOD'; gradeEl.classList.add('good'); }
+  else if (ratio >= 1.5) { gradeEl.textContent = 'FAIR'; gradeEl.classList.add('fair'); }
+  else { gradeEl.textContent = 'POOR'; gradeEl.classList.add('poor'); }
 
   // Bars
   const total = slPips + tpPips;
@@ -315,7 +309,7 @@ function updateMultiTP(lots, pipValPerLot) {
   let totalWeighted = 0;
   rows.forEach((inp, i) => {
     const pips = parseFloat(inp.value) || 0;
-    const pct  = parseFloat(inp.dataset.pct) / 100;
+    const pct = parseFloat(inp.dataset.pct) / 100;
     const profit = lots * pct * pipValPerLot * pips;
     totalWeighted += profit;
     const el = $('mtp' + i);
@@ -359,17 +353,17 @@ $('logTradeBtn').addEventListener('click', () => {
 
   const c = state.lastCalc;
   const entry = {
-    id:        state.tradeLog.length + 1,
-    time:      new Date().toLocaleTimeString('en-US', { hour12: false }),
+    id: state.tradeLog.length + 1,
+    time: new Date().toLocaleTimeString('en-US', { hour12: false }),
     direction: c.direction,
-    lots:      c.lots,
-    slPips:    c.slPips,
-    tpPips:    c.tpPips,
-    risk:      c.risk,
-    riskPct:   c.riskPct,
-    rr:        c.tpPips > 0 ? (c.tpPips / c.slPips).toFixed(2) : '0',
-    status:    'open',
-    pl:        0,
+    lots: c.lots,
+    slPips: c.slPips,
+    tpPips: c.tpPips,
+    risk: c.risk,
+    riskPct: c.riskPct,
+    rr: c.tpPips > 0 ? (c.tpPips / c.slPips).toFixed(2) : '0',
+    status: 'open',
+    pl: 0,
   };
 
   state.tradeLog.push(entry);
@@ -411,13 +405,13 @@ function renderHistoryTable() {
 
   tbody.innerHTML = state.tradeLog.map((t, i) => {
     const lots = parseFloat(t.lots) || 0;
-    const sl   = parseFloat(t.slPips) || 0;
-    const tp   = parseFloat(t.tpPips) || 0;
+    const sl = parseFloat(t.slPips) || 0;
+    const tp = parseFloat(t.tpPips) || 0;
     const pipVal = lots * 10;
 
     // Randomly mark older trades as win/loss for demo
     let status = t.status;
-    let pl     = t.pl;
+    let pl = t.pl;
     if (i < state.tradeLog.length - 1 && status === 'open') {
       t.status = Math.random() > 0.45 ? 'win' : 'loss';
       t.pl = t.status === 'win' ? (pipVal * tp).toFixed(2) : (-pipVal * sl).toFixed(2);
@@ -449,13 +443,13 @@ function renderHistoryTable() {
 function updateHistoryStats() {
   const trades = state.tradeLog;
   const closed = trades.filter(t => t.status !== 'open');
-  const wins   = closed.filter(t => t.status === 'win');
-  const wr     = closed.length > 0 ? (wins.length / closed.length * 100).toFixed(0) : 0;
-  const totalPL= closed.reduce((s, t) => s + (parseFloat(t.pl) || 0), 0);
-  const avgRR  = trades.reduce((s, t) => s + (parseFloat(t.rr) || 0), 0) / (trades.length || 1);
+  const wins = closed.filter(t => t.status === 'win');
+  const wr = closed.length > 0 ? (wins.length / closed.length * 100).toFixed(0) : 0;
+  const totalPL = closed.reduce((s, t) => s + (parseFloat(t.pl) || 0), 0);
+  const avgRR = trades.reduce((s, t) => s + (parseFloat(t.rr) || 0), 0) / (trades.length || 1);
 
   $('statTrades').textContent = trades.length;
-  $('statWR').textContent     = wr + '%';
+  $('statWR').textContent = wr + '%';
   const plEl = $('statPL');
   plEl.textContent = (totalPL >= 0 ? '+$' : '-$') + Math.abs(totalPL).toFixed(2);
   plEl.style.color = totalPL >= 0 ? 'var(--green)' : 'var(--red)';
@@ -474,8 +468,8 @@ function updateHistoryStats() {
 $$('.mtp-inp').forEach(inp => {
   inp.addEventListener('input', () => {
     const slPips = getSLInPips();
-    const risk   = parseFloat(riskAmount.value) || 0;
-    const lots   = slPips > 0 ? risk / (slPips * 10) : 0;
+    const risk = parseFloat(riskAmount.value) || 0;
+    const lots = slPips > 0 ? risk / (slPips * 10) : 0;
     updateMultiTP(lots, 10);
   });
 });
