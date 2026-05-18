@@ -22,12 +22,12 @@ const $$ = sel => document.querySelectorAll(sel);
 
 // ── STATE ──────────────────────────────────────────────────────────────
 const state = {
-  slMode: 'pips',     // 'pips' | 'dollars' | 'price'
+  slMode: 'pips',
   direction: 'buy',
   lotType: 'standard',
   leverage: 100,
   tradeLog: [],
-  livePrice: 2350.00,
+  livePrice: 0,   // starts at 0 — never show a stale default
   lastCalc: null,
 };
 
@@ -43,7 +43,8 @@ function saveInputs() {
     swap: $('swapFee') ? $('swapFee').value : '0',
     winRate: $('winRate').value,
     tradeLog: state.tradeLog,
-    lastLivePrice: state.livePrice  // Cache last known price
+    // Only cache the price if a REAL live price has been received
+    lastLivePrice: priceConnected ? state.livePrice : null
   };
   localStorage.setItem('xauusd_data', JSON.stringify(data));
 }
@@ -66,8 +67,9 @@ function loadInputs() {
       if(saved.winRate) $('winRate').value = saved.winRate;
       if(saved.tradeLog) state.tradeLog = saved.tradeLog;
 
-      // ✅ INSTANT PRICE: Show last cached price immediately (0ms delay)
-      if (saved.lastLivePrice && saved.lastLivePrice > 100) {
+      // INSTANT PRICE: Show last cached price immediately (0ms delay)
+      // Only use it if it looks like a real gold price (>1000 USD/oz)
+      if (saved.lastLivePrice && saved.lastLivePrice > 1000) {
         state.livePrice = saved.lastLivePrice;
         sessionInitialPrice = saved.lastLivePrice;
         $('livePrice').textContent = saved.lastLivePrice.toFixed(2);
