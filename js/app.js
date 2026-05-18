@@ -67,12 +67,17 @@ function loadInputs() {
     }
   } catch(e) {}
 
-  // One-time cleanup: wipe any stale cached price from old code
+  // One-time cleanup: wipe stale fields from old sessions
   try {
     const raw = JSON.parse(localStorage.getItem('xauusd_data'));
-    if (raw && raw.lastLivePrice !== undefined) {
-      delete raw.lastLivePrice;
-      localStorage.setItem('xauusd_data', JSON.stringify(raw));
+    if (raw) {
+      let dirty = false;
+      // Remove old cached price artifact
+      if (raw.lastLivePrice !== undefined) { delete raw.lastLivePrice; dirty = true; }
+      // Wipe commission/swap if they look like garbage (> $20 is unusual default)
+      if (parseFloat(raw.commission) > 20) { raw.commission = ''; dirty = true; }
+      if (parseFloat(raw.swap) > 20) { raw.swap = ''; dirty = true; }
+      if (dirty) localStorage.setItem('xauusd_data', JSON.stringify(raw));
     }
   } catch(e) {}
 }
@@ -297,11 +302,15 @@ if ($('accountCurrency')) {
 }
 
 function updateRiskBadge() {
-  const bal = parseFloat(accountBalance.value) || 1;
+  const bal = parseFloat(accountBalance.value) || 0;
   const risk = parseFloat(riskAmount.value) || 0;
+  if (bal <= 0) {
+    $('riskPctBadge').textContent = '--%';
+    riskSlider.value = 1;
+    return;
+  }
   const pct = (risk / bal * 100);
   $('riskPctBadge').textContent = pct.toFixed(2) + '%';
-  // Sync slider
   riskSlider.value = Math.min(10, pct);
 }
 
