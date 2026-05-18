@@ -562,7 +562,7 @@ $('logTradeBtn').addEventListener('click', () => {
 
   const c = state.lastCalc;
   const entry = {
-    id: state.tradeLog.length + 1,
+    id: Date.now(),  // unique timestamp ID — avoids duplicates on reload
     time: new Date().toLocaleTimeString('en-US', { hour12: false }),
     direction: c.direction,
     lots: c.lots,
@@ -570,7 +570,7 @@ $('logTradeBtn').addEventListener('click', () => {
     tpPips: c.tpPips,
     risk: c.risk,
     riskPct: c.riskPct,
-    rr: c.tpPips > 0 ? (c.tpPips / c.slPips).toFixed(2) : '0',
+    rr: c.tpPips > 0 ? (c.tpPips / parseFloat(c.slPips)).toFixed(2) : '0',
     status: 'open',
     pl: 0,
   };
@@ -610,7 +610,7 @@ function renderLog() {
 function renderHistoryTable() {
   const tbody = $('historyBody');
   if (state.tradeLog.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="11" class="empty-row">No trades logged. Calculate & log a trade above.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="11" class="empty-row">No trades logged. Calculate &amp; log a trade above.</td></tr>';
     return;
   }
 
@@ -619,26 +619,32 @@ function renderHistoryTable() {
     const sl = parseFloat(t.slPips) || 0;
     const tp = parseFloat(t.tpPips) || 0;
     const pipVal = lots * 10;
+    const plNum = parseFloat(t.pl);
+    const plDisplay = t.status === 'open'
+      ? '--'
+      : (plNum >= 0 ? '+$' : '-$') + Math.abs(plNum).toFixed(2);
+    const plColor = t.status === 'open' ? 'var(--text-dim)'
+      : plNum > 0 ? 'var(--green)' : plNum < 0 ? 'var(--red)' : 'var(--text-dim)';
 
-    let status = t.status;
-    let pl = t.pl;
-
-    const plNum = parseFloat(pl);
     return `
       <tr>
-        <td>${t.id}</td>
+        <td>${i + 1}</td>
         <td>${t.time}</td>
         <td><span class="dir-badge ${t.direction}">${t.direction.toUpperCase()}</span></td>
         <td>${t.lots}</td>
         <td>${t.slPips}</td>
-        <td>${t.tpPips || '--'}</td>
+        <td>${tp > 0 ? tp : '--'}</td>
         <td>$${t.risk}</td>
         <td>${t.riskPct}%</td>
-        <td>1:${t.rr}</td>
-        <td><span class="status-badge ${status}">${status.toUpperCase()}</span></td>
-        <td style="color:${plNum > 0 ? 'var(--green)' : plNum < 0 ? 'var(--red)' : 'var(--text-dim)'}">
-          ${plNum > 0 ? '+' : ''}${status === 'open' ? '--' : '$' + pl}
+        <td>${parseFloat(t.rr) > 0 ? '1:' + t.rr : '--'}</td>
+        <td>
+          <select class="status-select status-${t.status}" data-idx="${i}" onchange="changeTradeStatus(${i}, this.value)">
+            <option value="open" ${t.status==='open'?'selected':''}>OPEN</option>
+            <option value="win" ${t.status==='win'?'selected':''}>WIN</option>
+            <option value="loss" ${t.status==='loss'?'selected':''}>LOSS</option>
+          </select>
         </td>
+        <td style="color:${plColor}">${plDisplay}</td>
       </tr>
     `;
   }).join('');
@@ -650,17 +656,50 @@ function updateHistoryStats() {
   const wins = closed.filter(t => t.status === 'win');
   const wr = closed.length > 0 ? (wins.length / closed.length * 100).toFixed(0) : 0;
   const totalPL = closed.reduce((s, t) => s + (parseFloat(t.pl) || 0), 0);
-  const avgRR = trades.reduce((s, t) => s + (parseFloat(t.rr) || 0), 0) / (trades.length || 1);
+  // avgRR: use only trades that have a valid RR (closed trades with tpPips set)
+  const rrTrades = trades.filter(t => parseFloat(t.rr) > 0);
+  const avgRR = rrTrades.length > 0
+    ? rrTrades.reduce((s, t) => s + parseFloat(t.rr), 0) / rrTrades.length
+    : 0;
 
   $('statTrades').textContent = trades.length;
-  $('statWR').textContent = wr + '%';
+  $('statWR').textContent = closed.length > 0 ? wr + '%' : '--';
   const plEl = $('statPL');
-  plEl.textContent = (totalPL >= 0 ? '+$' : '-$') + Math.abs(totalPL).toFixed(2);
+  plEl.textContent = closed.length > 0
+    ? (totalPL >= 0 ? '+$' : '-$') + Math.abs(totalPL).toFixed(2)
+    : '--';
   plEl.style.color = totalPL >= 0 ? 'var(--green)' : 'var(--red)';
-  $('statRR').textContent = avgRR.toFixed(2);
+  $('statRR').textContent = avgRR > 0 ? avgRR.toFixed(2) : '--';
 
   // Sync Break-Even Calculator whenever history changes
   updateBreakEven();
+}
+
+// ── STATUS CHANGE HANDLER ───────────────────────────────────────────────
+function changeTradeStatus(idx, newStatus) {
+  const t = state.tradeLog[idx];
+  if (!t) return;
+  t.status = newStatus;
+
+  // Auto-calculate P/L when closing a trade
+  const lots = parseFloat(t.lots) || 0;
+  const pipVal = lots * 10; // $10 per pip per standard lot
+
+  if (newStatus === 'win') {
+    // WIN: profit = TP pips × pip value
+    const tp = parseFloat(t.tpPips) || 0;
+    t.pl = tp > 0 ? (tp * pipVal).toFixed(2) : parseFloat(t.risk).toFixed(2);
+  } else if (newStatus === 'loss') {
+    // LOSS: loss = risk amount (what you risked)
+    t.pl = (-parseFloat(t.risk)).toFixed(2);
+  } else {
+    // Back to OPEN
+    t.pl = 0;
+  }
+
+  renderHistoryTable();
+  updateHistoryStats();
+  saveInputs();
 }
 
 // ── WIRE UP ALL INPUTS ─────────────────────────────────────────────────

@@ -763,6 +763,25 @@ body {
 .status-badge.win   { background: var(--green-dim); color: var(--green); }
 .status-badge.loss  { background: var(--red-dim); color: var(--red); }
 
+/* Status dropdown in history table */
+.status-select {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 3px;
+  font-family: inherit;
+  font-size: 0.6rem;
+  letter-spacing: 0.08em;
+  padding: 2px 4px;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.status-select.status-open  { color: var(--gold);  border-color: rgba(240,192,64,0.3); }
+.status-select.status-win   { color: var(--green); border-color: rgba(0,210,120,0.3); }
+.status-select.status-loss  { color: var(--red);   border-color: rgba(255,60,90,0.3); }
+.status-select option { background: #1a1d2e; color: var(--text); }
+.status-select:hover { border-color: var(--gold); }
+
 /* ── RESPONSIVE ── */
 @media (max-width: 1100px) {
   .main-grid { grid-template-columns: 300px 1fr; }
