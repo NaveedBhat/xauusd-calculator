@@ -170,6 +170,32 @@ function updateClock() {
 setInterval(updateClock, 1000);
 updateClock();
 
+// ── INSTANT PRICE ON LOAD (REST fallback before WS connects) ─────────────
+async function fetchInitialPrice() {
+  try {
+    const res = await fetch(
+      `https://finnhub.io/api/v1/quote?symbol=OANDA%3AXAU_USD&token=${FINNHUB_API_KEY}`
+    );
+    const data = await res.json();
+    if (data && data.c && data.c > 0) {
+      const price = parseFloat(data.c);
+      state.livePrice = price;
+      if (sessionInitialPrice === null) sessionInitialPrice = price;
+      $('livePrice').textContent = price.toFixed(2);
+      // Show day's change % using previous close
+      if (data.pc && data.pc > 0) {
+        const changePct = ((price - data.pc) / data.pc) * 100;
+        const changeEl = $('liveChange');
+        changeEl.textContent = (changePct >= 0 ? '+' : '') + changePct.toFixed(4) + '%';
+        changeEl.style.color = changePct >= 0 ? 'var(--green)' : 'var(--red)';
+      }
+    }
+  } catch(e) {
+    console.warn('Initial price fetch failed, waiting for WebSocket...', e);
+  }
+}
+
+fetchInitialPrice();
 connectLivePrice();
 
 // ── TOGGLE SETUP ───────────────────────────────────────────────────────
