@@ -247,7 +247,14 @@ setupToggle('slModeToggle', 'slMode', mode => {
   });
   if (mode === 'pips') $('slPipsGroup').classList.remove('hidden');
   if (mode === 'dollars') $('slDollarsGroup').classList.remove('hidden');
-  if (mode === 'price') $('slPriceGroup').classList.remove('hidden');
+  if (mode === 'price') {
+    $('slPriceGroup').classList.remove('hidden');
+    // Auto-fill entry price with current live price if empty
+    const ep = $('entryPrice');
+    if (ep && (!ep.value || parseFloat(ep.value) <= 0) && state.livePrice > 0) {
+      ep.value = state.livePrice.toFixed(2);
+    }
+  }
   calculate();
 });
 

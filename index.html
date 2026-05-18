@@ -56,7 +56,7 @@
         </label>
         <div class="input-wrap">
           <span class="input-prefix" id="currencySymbol">$</span>
-          <input type="number" id="accountBalance" class="inp" value="10000" min="0" step="100" />
+          <input type="number" id="accountBalance" class="inp" placeholder="e.g. 10000" min="0" step="100" />
         </div>
       </div>
 
@@ -65,12 +65,12 @@
         <div class="risk-row">
           <div class="input-wrap" style="flex:1">
             <span class="input-prefix">$</span>
-            <input type="number" id="riskAmount" class="inp" value="50" min="0" step="1" />
+            <input type="number" id="riskAmount" class="inp" placeholder="e.g. 100" min="0" step="1" />
           </div>
           <div class="risk-pct-badge" id="riskPctBadge">0.50%</div>
         </div>
         <div class="risk-slider-wrap">
-          <input type="range" id="riskSlider" class="risk-slider" min="0.1" max="10" step="0.1" value="0.5" />
+          <input type="range" id="riskSlider" class="risk-slider" min="0.1" max="10" step="0.1" value="1" />
           <div class="slider-labels">
             <span>0.1%</span><span>2.5%</span><span>5%</span><span>10%</span>
           </div>
@@ -83,7 +83,7 @@
         <label class="input-label">COMMISSION PER LOT <span class="unit-tag" id="commUnit">USD</span></label>
         <div class="input-wrap">
           <span class="input-prefix" id="commSymbol">$</span>
-          <input type="number" id="commission" class="inp" value="0.00" min="0" step="0.5" />
+          <input type="number" id="commission" class="inp" placeholder="0.00" min="0" step="0.5" />
         </div>
       </div>
 
@@ -91,7 +91,7 @@
         <label class="input-label">SWAP / OVERNIGHT FEE <span class="unit-tag" id="swapUnit">USD</span></label>
         <div class="input-wrap">
           <span class="input-prefix" id="swapSymbol">$</span>
-          <input type="number" id="swapFee" class="inp" value="0.00" step="0.1" />
+          <input type="number" id="swapFee" class="inp" placeholder="0.00" step="0.1" />
         </div>
       </div>
 
@@ -109,7 +109,7 @@
       <div class="input-group" id="slPipsGroup">
         <label class="input-label">STOP LOSS <span class="unit-tag">PIPS</span></label>
         <div class="input-wrap">
-          <input type="number" id="slPips" class="inp" value="50" min="0.1" step="1" />
+          <input type="number" id="slPips" class="inp" placeholder="e.g. 50" min="0.1" step="1" />
           <span class="input-suffix">pips</span>
         </div>
         <div class="helper-text">1 pip = $0.10 per 0.01 lot on XAUUSD</div>
@@ -119,18 +119,18 @@
         <label class="input-label">STOP LOSS <span class="unit-tag">USD VALUE</span></label>
         <div class="input-wrap">
           <span class="input-prefix">$</span>
-          <input type="number" id="slDollars" class="inp" value="5" min="0.01" step="0.01" />
+          <input type="number" id="slDollars" class="inp" placeholder="e.g. 50" min="0.01" step="0.01" />
         </div>
       </div>
 
       <div class="input-group hidden" id="slPriceGroup">
         <label class="input-label">ENTRY PRICE</label>
         <div class="input-wrap">
-          <input type="number" id="entryPrice" class="inp" value="2350.00" step="0.01" />
+          <input type="number" id="entryPrice" class="inp" placeholder="Live price auto-fills" step="0.01" />
         </div>
         <label class="input-label" style="margin-top:10px">STOP LOSS PRICE</label>
         <div class="input-wrap">
-          <input type="number" id="slPrice" class="inp" value="2345.00" step="0.01" />
+          <input type="number" id="slPrice" class="inp" placeholder="e.g. 4500.00" step="0.01" />
         </div>
         <label class="input-label" style="margin-top:10px">TAKE PROFIT PRICE <span class="unit-tag">OPTIONAL</span></label>
         <div class="input-wrap">
@@ -210,7 +210,7 @@
           <div style="flex:1; display:flex; flex-direction:column; gap:8px;">
             <div class="input-group">
               <label class="input-label">TAKE PROFIT <span class="unit-tag">PIPS</span></label>
-              <input type="number" id="tpPips" class="inp" value="100" min="1" step="1" />
+              <input type="number" id="tpPips" class="inp" placeholder="e.g. 100" min="1" step="1" />
             </div>
             <div class="input-group">
               <label class="input-label">TAKE PROFIT <span class="unit-tag">PRICE LEVEL</span></label>
@@ -223,30 +223,30 @@
           <div class="rr-arrow">→</div>
           <div class="rr-display">
             <div class="rr-ratio-label">R:R RATIO</div>
-            <div class="rr-ratio-value" id="rrRatio">1:2.00</div>
-            <div class="rr-grade" id="rrGrade">GOOD</div>
+            <div class="rr-ratio-value" id="rrRatio">--</div>
+            <div class="rr-grade" id="rrGrade"></div>
           </div>
         </div>
         <div class="rr-bars">
           <div class="rr-bar-row">
             <span class="rr-bar-label">SL</span>
-            <div class="rr-bar-track"><div class="rr-bar sl-bar" id="slBar" style="width:33%"></div></div>
-            <span class="rr-bar-val" id="slBarVal">50 pips</span>
+            <div class="rr-bar-track"><div class="rr-bar sl-bar" id="slBar" style="width:0%"></div></div>
+            <span class="rr-bar-val" id="slBarVal">-- pips</span>
           </div>
           <div class="rr-bar-row">
             <span class="rr-bar-label">TP</span>
-            <div class="rr-bar-track"><div class="rr-bar tp-bar" id="tpBar" style="width:66%"></div></div>
-            <span class="rr-bar-val" id="tpBarVal">100 pips</span>
+            <div class="rr-bar-track"><div class="rr-bar tp-bar" id="tpBar" style="width:0%"></div></div>
+            <span class="rr-bar-val" id="tpBarVal">-- pips</span>
           </div>
         </div>
         <div class="rr-profit-box">
           <div class="rp-item">
             <span class="rp-label">IF TRADE WINS <span style="font-size:0.5rem; opacity:0.7">(hits TP)</span></span>
-            <span class="rp-value green" id="potentialProfit">$100.00</span>
+            <span class="rp-value green" id="potentialProfit">--</span>
           </div>
           <div class="rp-item">
             <span class="rp-label">IF TRADE LOSES <span style="font-size:0.5rem; opacity:0.7">(hits SL)</span></span>
-            <span class="rp-value red" id="potentialLoss">-$50.00</span>
+            <span class="rp-value red" id="potentialLoss">--</span>
           </div>
         </div>
       </div>
@@ -262,17 +262,17 @@
         <div class="multi-tp-grid" id="multiTPGrid">
           <div class="mtp-row">
             <span class="mtp-label">TP1 (25%)</span>
-            <input type="number" class="inp mtp-inp" data-pct="25" placeholder="pips" value="50" />
+            <input type="number" class="inp mtp-inp" data-pct="25" placeholder="pips" />
             <span class="mtp-profit" id="mtp0">--</span>
           </div>
           <div class="mtp-row">
             <span class="mtp-label">TP2 (50%)</span>
-            <input type="number" class="inp mtp-inp" data-pct="50" placeholder="pips" value="100" />
+            <input type="number" class="inp mtp-inp" data-pct="50" placeholder="pips" />
             <span class="mtp-profit" id="mtp1">--</span>
           </div>
           <div class="mtp-row">
             <span class="mtp-label">TP3 (25%)</span>
-            <input type="number" class="inp mtp-inp" data-pct="25" placeholder="pips" value="200" />
+            <input type="number" class="inp mtp-inp" data-pct="25" placeholder="pips" />
             <span class="mtp-profit" id="mtp2">--</span>
           </div>
         </div>
@@ -305,7 +305,7 @@
         <div class="input-group" style="margin-top:10px">
           <label class="input-label">YOUR WIN RATE % <span class="unit-tag" id="winRateSource">MANUAL</span></label>
           <div class="input-wrap">
-            <input type="number" id="winRate" class="inp" value="55" min="1" max="99" step="1" />
+            <input type="number" id="winRate" class="inp" placeholder="e.g. 55" min="1" max="99" step="1" />
             <span class="input-suffix">%</span>
           </div>
           <div class="helper-text" id="winRateHint">Auto-updates from your trade history once you have closed trades</div>
