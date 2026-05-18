@@ -377,7 +377,6 @@ function calculate() {
 
   // Derived values
   const slUSD = risk;
-  const units = Math.round(lots * XAUUSD.standardLot * 1000) / 10; // notional oz-ish
   const pipValForPosition = lots * pipValPerLot;
   const riskPct = balance > 0 ? (risk / balance * 100) : 0;
 
@@ -401,7 +400,10 @@ function calculate() {
   $('resRiskPct').textContent = riskPct.toFixed(2) + '%';
   $('resSLPips').textContent = slPips.toFixed(1);
   $('resSLUSD').textContent = '$' + slUSD.toFixed(2);
-  $('resUnits').textContent = (lots * 100000).toLocaleString('en-US', { maximumFractionDigits: 0 });
+  
+  // 1 standard lot of gold = 100 oz
+  const actualUnits = lots * XAUUSD.standardLot;
+  $('resUnits').textContent = actualUnits.toLocaleString('en-US', { maximumFractionDigits: 2 }) + ' oz';
   $('resPipValue').textContent = '$' + pipValForPosition.toFixed(2);
 
   // Commission & Swap Costs (in USD)
