@@ -339,7 +339,8 @@ function calculate() {
   const slPips = getSLInPips();
 
   if (slPips <= 0 || risk <= 0) {
-    $('positionSize').textContent = '0.00';
+    $('positionSize').textContent = '--';
+    $('positionSub').textContent = 'Enter balance, risk & stop loss to calculate';
     return;
   }
 

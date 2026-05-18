@@ -67,7 +67,7 @@
             <span class="input-prefix">$</span>
             <input type="number" id="riskAmount" class="inp" placeholder="e.g. 100" min="0" step="1" />
           </div>
-          <div class="risk-pct-badge" id="riskPctBadge">0.50%</div>
+          <div class="risk-pct-badge" id="riskPctBadge">--%</div>
         </div>
         <div class="risk-slider-wrap">
           <input type="range" id="riskSlider" class="risk-slider" min="0.1" max="10" step="0.1" value="1" />
@@ -134,7 +134,7 @@
         </div>
         <label class="input-label" style="margin-top:10px">TAKE PROFIT PRICE <span class="unit-tag">OPTIONAL</span></label>
         <div class="input-wrap">
-          <input type="number" id="tpPriceLevel" class="inp" placeholder="e.g. 2370.00" step="0.01" />
+          <input type="number" id="tpPriceLevel" class="inp" placeholder="e.g. 4600.00" step="0.01" />
         </div>
         <div class="helper-text" id="tpPipsCalc">Enter TP price to auto-calculate pips</div>
       </div>
@@ -169,35 +169,35 @@
 
       <div class="result-hero">
         <div class="result-hero-label">POSITION SIZE</div>
-        <div class="result-hero-value" id="positionSize">0.10</div>
+        <div class="result-hero-value" id="positionSize">--</div>
         <div class="result-hero-unit" id="positionUnit">LOTS</div>
-        <div class="result-hero-sub" id="positionSub">= 0.10 standard lots</div>
+        <div class="result-hero-sub" id="positionSub">Enter your parameters above</div>
       </div>
 
       <div class="result-grid">
         <div class="result-card">
           <div class="rc-label">RISK AMOUNT</div>
-          <div class="rc-value" id="resRisk">$50.00</div>
+          <div class="rc-value" id="resRisk">--</div>
         </div>
         <div class="result-card">
           <div class="rc-label">RISK %</div>
-          <div class="rc-value" id="resRiskPct">0.50%</div>
+          <div class="rc-value" id="resRiskPct">--</div>
         </div>
         <div class="result-card">
           <div class="rc-label">SL IN PIPS</div>
-          <div class="rc-value" id="resSLPips">50</div>
+          <div class="rc-value" id="resSLPips">--</div>
         </div>
         <div class="result-card">
           <div class="rc-label">SL IN USD</div>
-          <div class="rc-value" id="resSLUSD">$5.00</div>
+          <div class="rc-value" id="resSLUSD">--</div>
         </div>
         <div class="result-card">
           <div class="rc-label">UNITS</div>
-          <div class="rc-value" id="resUnits">10,000</div>
+          <div class="rc-value" id="resUnits">--</div>
         </div>
         <div class="result-card">
           <div class="rc-label">PIP VALUE</div>
-          <div class="rc-value" id="resPipValue">$1.00</div>
+          <div class="rc-value" id="resPipValue">--</div>
         </div>
       </div>
 
@@ -284,7 +284,7 @@
       <!-- Break-even calculator -->
       <div class="tool-block">
         <div class="tool-title">⚖️ BREAK-EVEN CALCULATOR</div>
-        <div class="be-source-badge" id="beSourceBadge">📊 FROM TRADE HISTORY</div>
+        <div class="be-source-badge manual" id="beSourceBadge">✎ MANUAL INPUT</div>
         <div class="be-grid">
           <div class="be-item">
             <div class="be-label">Win Rate to B/E</div>
