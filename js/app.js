@@ -49,13 +49,17 @@ function loadInputs() {
         $('accountCurrency').value = saved.currency;
         const symbols = {USD:'$', EUR:'€', GBP:'£', AUD:'A$', JPY:'¥', CAD:'C$'};
         $('currencySymbol').textContent = symbols[saved.currency] || '$';
+        // CRITICAL BUG FIX: Fetch exchange rate for saved currency on load
+        fetchExchangeRate(saved.currency);
       }
       if(saved.riskAmount) $('riskAmount').value = saved.riskAmount;
       if(saved.slPips) $('slPips').value = saved.slPips;
       if(saved.commission && $('commission')) $('commission').value = saved.commission;
       if(saved.swap && $('swapFee')) $('swapFee').value = saved.swap;
       if(saved.winRate) $('winRate').value = saved.winRate;
-      if(saved.tradeLog) state.tradeLog = saved.tradeLog;
+      if(saved.tradeLog) {
+        state.tradeLog = saved.tradeLog;
+      }
     }
   } catch(e) {}
 }
@@ -622,4 +626,12 @@ function initTradingView() {
 loadInputs();
 calculate();
 updateRiskBadge();
+
+// CRITICAL BUG FIX: Render UI for logged trades on page load
+if (state.tradeLog.length > 0) {
+  renderLog();
+  renderHistoryTable();
+  updateHistoryStats();
+}
+
 setTimeout(initTradingView, 500);
