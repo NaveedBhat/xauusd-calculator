@@ -90,42 +90,73 @@ async function fetchExchangeRate(targetCurrency) {
 }
 
 let sessionInitialPrice = null;
+let priceConnected = false;
 
+// ── PRICE UI HELPERS ───────────────────────────────────────────────────
+function setConnectingState() {
+  const priceEl = $('livePrice');
+  priceEl.textContent = 'SYNC...';
+  priceEl.style.fontSize = '0.75rem';
+  priceEl.style.letterSpacing = '0.15em';
+  const dot = document.querySelector('.live-dot');
+  if (dot) { dot.style.background = 'var(--gold)'; dot.style.boxShadow = '0 0 8px var(--gold)'; }
+  $('liveChange').textContent = 'CONNECTING';
+  $('liveChange').style.color = 'var(--gold)';
+}
+
+function applyPrice(newPrice, changePct) {
+  if (!newPrice || newPrice <= 0) return;
+  const priceEl = $('livePrice');
+  priceEl.textContent = newPrice.toFixed(2);
+  priceEl.style.fontSize = '';
+  priceEl.style.letterSpacing = '';
+  const dot = document.querySelector('.live-dot');
+  if (dot) { dot.style.background = 'var(--green)'; dot.style.boxShadow = '0 0 8px var(--green)'; }
+  state.livePrice = newPrice;
+  if (!priceConnected) { priceConnected = true; }
+  if (changePct !== undefined) {
+    const changeEl = $('liveChange');
+    changeEl.textContent = (changePct >= 0 ? '+' : '') + changePct.toFixed(4) + '%';
+    changeEl.style.color = changePct >= 0 ? 'var(--green)' : 'var(--red)';
+  }
+}
+
+// ── REST PRICE FETCH (polling fallback) ───────────────────────────────
+async function fetchRestPrice() {
+  try {
+    const res = await fetch(
+      `https://finnhub.io/api/v1/forex/rates?base=USD&token=${FINNHUB_API_KEY}`
+    );
+    const data = await res.json();
+    if (data && data.quote && data.quote['XAU'] && data.quote['XAU'] > 0) {
+      const price = parseFloat((1 / data.quote['XAU']).toFixed(2));
+      if (sessionInitialPrice === null) sessionInitialPrice = price;
+      const pct = ((price - sessionInitialPrice) / sessionInitialPrice) * 100;
+      applyPrice(price, pct);
+      return true;
+    }
+  } catch(e) { /* silent fail — WebSocket will take over */ }
+  return false;
+}
+
+// ── LIVE WEBSOCKET PRICE ──────────────────────────────────────────────
 function connectLivePrice() {
-  // Connecting to Finnhub's Live WebSocket for exact OANDA XAU_USD data
   const ws = new WebSocket(`wss://ws.finnhub.io?token=${FINNHUB_API_KEY}`);
 
   ws.onopen = () => {
-    console.log("Connected to Finnhub!");
-    // Subscribe to OANDA XAUUSD
     ws.send(JSON.stringify({ 'type': 'subscribe', 'symbol': 'OANDA:XAU_USD' }));
   };
 
   ws.onmessage = (event) => {
     const response = JSON.parse(event.data);
-
-    // Check if it's a trade update
     if (response.type === 'trade' && response.data && response.data.length > 0) {
-      // Finnhub batches trades. The LAST element is the most recent.
       const latestTrade = response.data[response.data.length - 1];
-      const newPrice = parseFloat(latestTrade.p); // trade price
-
-      // Store the first price we see to calculate session % change
-      if (sessionInitialPrice === null) {
-        sessionInitialPrice = newPrice;
-      }
-
+      const newPrice = parseFloat(latestTrade.p);
+      if (sessionInitialPrice === null) sessionInitialPrice = newPrice;
       const changePct = ((newPrice - sessionInitialPrice) / sessionInitialPrice) * 100;
+      applyPrice(newPrice, changePct);
 
-      state.livePrice = newPrice;
-
-      $('livePrice').textContent = state.livePrice.toFixed(2);
-
-      const changeEl = $('liveChange');
-      changeEl.textContent = (changePct >= 0 ? '+' : '') + changePct.toFixed(4) + '%';
-      changeEl.style.color = changePct >= 0 ? 'var(--green)' : 'var(--red)';
-
-      // Real-time margin updates without flashing the UI
+      // Real-time margin updates
       if (state.lastCalc && state.lastCalc.lots) {
         const balance = parseFloat($('accountBalance').value) * exchangeRate || 0;
         const lots = parseFloat(state.lastCalc.lots);
@@ -133,16 +164,13 @@ function connectLivePrice() {
         const marginReq = notionalValue / state.leverage;
         const freeMargin = balance - marginReq;
         const marginLevel = marginReq > 0 ? (balance / marginReq * 100) : 0;
-        
         const mReqEl = $('marginRequired');
         if (mReqEl) mReqEl.textContent = '$' + marginReq.toFixed(2);
-        
         const fMarginEl = $('freeMargin');
         if (fMarginEl) {
           fMarginEl.textContent = (freeMargin >= 0 ? '$' : '-$') + Math.abs(freeMargin).toFixed(2);
           fMarginEl.style.color = freeMargin >= 0 ? 'var(--green)' : 'var(--red)';
         }
-        
         const mLevelEl = $('marginLevel');
         if (mLevelEl) {
           mLevelEl.textContent = marginLevel.toFixed(0) + '%';
@@ -153,13 +181,10 @@ function connectLivePrice() {
   };
 
   ws.onclose = () => {
-    console.log("WebSocket disconnected. Reconnecting in 5s...");
     setTimeout(connectLivePrice, 5000);
   };
 
-  ws.onerror = (err) => {
-    console.error("WebSocket Error:", err);
-  };
+  ws.onerror = () => {};
 }
 
 // ── LIVE CLOCK ──────────────────────────────────────────────────────────
@@ -170,32 +195,15 @@ function updateClock() {
 setInterval(updateClock, 1000);
 updateClock();
 
-// ── INSTANT PRICE ON LOAD (REST fallback before WS connects) ─────────────
-async function fetchInitialPrice() {
-  try {
-    // Use forex/rates endpoint (works on free plan) — XAU = oz of gold per $1 USD
-    // So price of 1 oz gold in USD = 1 / data.quote.XAU
-    const res = await fetch(
-      `https://finnhub.io/api/v1/forex/rates?base=USD&token=${FINNHUB_API_KEY}`
-    );
-    const data = await res.json();
-    if (data && data.quote && data.quote['XAU'] && data.quote['XAU'] > 0) {
-      const price = parseFloat((1 / data.quote['XAU']).toFixed(2));
-      state.livePrice = price;
-      if (sessionInitialPrice === null) sessionInitialPrice = price;
-      $('livePrice').textContent = price.toFixed(2);
-      // Change % shows as flat until WebSocket gives us session ticks
-      const changeEl = $('liveChange');
-      changeEl.textContent = '+0.0000%';
-      changeEl.style.color = 'var(--green)';
-    }
-  } catch(e) {
-    console.warn('Initial price fetch failed, waiting for WebSocket...', e);
-  }
-}
-
-fetchInitialPrice();
+// ── STARTUP SEQUENCE ───────────────────────────────────────────────────
+// 1. Show connecting state immediately (no more ---.-- blank)
+setConnectingState();
+// 2. Try REST immediately for fast initial display
+fetchRestPrice();
+// 3. Connect WebSocket for real-time ticks
 connectLivePrice();
+// 4. Polling fallback every 30s in case WS has no ticks (quiet market)
+setInterval(fetchRestPrice, 30000);
 
 // ── TOGGLE SETUP ───────────────────────────────────────────────────────
 function setupToggle(groupId, stateKey, onChange) {
