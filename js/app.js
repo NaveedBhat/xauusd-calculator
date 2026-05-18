@@ -500,7 +500,7 @@ function updateBreakEven() {
   let winRate;
   let fromHistory = false;
 
-  if (closed.length >= 5) {
+  if (closed.length >= 1) {
     winRate = wins.length / closed.length;
     fromHistory = true;
     $('winRate').value = (winRate * 100).toFixed(0);
@@ -522,7 +522,7 @@ function updateBreakEven() {
   if (sourceTag) sourceTag.textContent = fromHistory ? 'FROM HISTORY' : 'MANUAL';
   if (hint) hint.textContent = fromHistory
     ? `Based on ${wins.length} wins / ${closed.length} closed trades`
-    : 'Log 5+ closed trades and win rate auto-updates from history';
+    : 'Log closed trades and win rate auto-updates from history';
 
   if (tpPips <= 0 || slPips <= 0) return;
 
