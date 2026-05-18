@@ -24,6 +24,60 @@ const state = {
   lastCalc: null,
 };
 
+let exchangeRate = 1.0;
+
+function saveInputs() {
+  const data = {
+    balance: $('accountBalance').value,
+    currency: $('accountCurrency') ? $('accountCurrency').value : 'USD',
+    riskAmount: $('riskAmount').value,
+    slPips: $('slPips').value,
+    commission: $('commission') ? $('commission').value : '0',
+    swap: $('swapFee') ? $('swapFee').value : '0',
+    winRate: $('winRate').value,
+    tradeLog: state.tradeLog
+  };
+  localStorage.setItem('xauusd_data', JSON.stringify(data));
+}
+
+function loadInputs() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('xauusd_data'));
+    if (saved) {
+      if(saved.balance) $('accountBalance').value = saved.balance;
+      if(saved.currency && $('accountCurrency')) {
+        $('accountCurrency').value = saved.currency;
+        const symbols = {USD:'$', EUR:'€', GBP:'£', AUD:'A$', JPY:'¥', CAD:'C$'};
+        $('currencySymbol').textContent = symbols[saved.currency] || '$';
+      }
+      if(saved.riskAmount) $('riskAmount').value = saved.riskAmount;
+      if(saved.slPips) $('slPips').value = saved.slPips;
+      if(saved.commission && $('commission')) $('commission').value = saved.commission;
+      if(saved.swap && $('swapFee')) $('swapFee').value = saved.swap;
+      if(saved.winRate) $('winRate').value = saved.winRate;
+      if(saved.tradeLog) state.tradeLog = saved.tradeLog;
+    }
+  } catch(e) {}
+}
+
+async function fetchExchangeRate(targetCurrency) {
+  if (targetCurrency === 'USD') {
+    exchangeRate = 1.0;
+    calculate();
+    return;
+  }
+  try {
+    const res = await fetch(`https://finnhub.io/api/v1/forex/rates?base=USD&token=${FINNHUB_API_KEY}`);
+    const data = await res.json();
+    if (data && data.quote && data.quote[targetCurrency]) {
+      // API returns rate for 1 USD = X TargetCurrency.
+      // To convert TargetCurrency to USD, divide by the rate.
+      exchangeRate = 1 / data.quote[targetCurrency];
+    }
+  } catch(e) { console.error("Rate fetch failed", e); }
+  calculate();
+}
+
 // ── ELEMENT REFS ───────────────────────────────────────────────────────
 const $ = id => document.getElementById(id);
 const $$ = sel => document.querySelectorAll(sel);
@@ -146,6 +200,14 @@ accountBalance.addEventListener('input', () => {
   calculate();
 });
 
+if ($('accountCurrency')) {
+  $('accountCurrency').addEventListener('change', (e) => {
+    const symbols = {USD:'$', EUR:'€', GBP:'£', AUD:'A$', JPY:'¥', CAD:'C$'};
+    $('currencySymbol').textContent = symbols[e.target.value] || '$';
+    fetchExchangeRate(e.target.value);
+  });
+}
+
 function updateRiskBadge() {
   const bal = parseFloat(accountBalance.value) || 1;
   const risk = parseFloat(riskAmount.value) || 0;
@@ -184,8 +246,13 @@ function getSLInPips() {
 }
 
 function calculate() {
-  const balance = parseFloat(accountBalance.value) || 0;
-  const risk = parseFloat(riskAmount.value) || 0;
+  const balanceRaw = parseFloat(accountBalance.value) || 0;
+  const riskRaw = parseFloat(riskAmount.value) || 0;
+  
+  // Convert balance and risk to USD for core calculations
+  const balance = balanceRaw * exchangeRate;
+  const risk = riskRaw * exchangeRate;
+  
   const slPips = getSLInPips();
 
   if (slPips <= 0 || risk <= 0) {
@@ -236,7 +303,7 @@ function calculate() {
   $('positionUnit').textContent = displayUnit;
   $('positionSub').textContent = displaySub;
 
-  // Update result cards
+  // Update result cards (displaying in USD)
   $('resRisk').textContent = '$' + risk.toFixed(2);
   $('resRiskPct').textContent = riskPct.toFixed(2) + '%';
   $('resSLPips').textContent = slPips.toFixed(1);
@@ -244,8 +311,13 @@ function calculate() {
   $('resUnits').textContent = (lots * 100000).toLocaleString('en-US', { maximumFractionDigits: 0 });
   $('resPipValue').textContent = '$' + pipValForPosition.toFixed(2);
 
+  // Commission & Swap Costs (in USD)
+  const commission = parseFloat($('commission') ? $('commission').value : 0) || 0;
+  const swap = parseFloat($('swapFee') ? $('swapFee').value : 0) || 0;
+  const totalCost = (commission * displayLots) + swap;
+
   // R:R update
-  updateRR(lots, slPips, pipValForPosition);
+  updateRR(lots, slPips, pipValForPosition, totalCost);
 
   // Multi-TP
   updateMultiTP(lots, pipValPerLot);
@@ -270,22 +342,26 @@ function calculate() {
     tpPips: parseFloat($('tpPips').value) || 0,
     balance: balance.toFixed(2),
     pipValForPosition: pipValForPosition.toFixed(2),
+    cost: totalCost
   };
+  
+  saveInputs();
 }
 
 // ── R:R CALCULATION ────────────────────────────────────────────────────
-function updateRR(lots, slPips, pipValForPosition) {
+function updateRR(lots, slPips, pipValForPosition, totalCost = 0) {
   const tpPips = parseFloat($('tpPips').value) || 0;
 
   if (slPips <= 0 || tpPips <= 0) return;
 
   const ratio = tpPips / slPips;
-  const potProfit = lots * 10 * tpPips;
-  const potLoss = lots * 10 * slPips;
+  const potProfit = (lots * 10 * tpPips) - totalCost;
+  const potLoss = (lots * 10 * slPips) + totalCost;
 
   $('rrRatio').textContent = '1:' + ratio.toFixed(2);
-  $('potentialProfit').textContent = '+$' + potProfit.toFixed(2);
+  $('potentialProfit').textContent = (potProfit >= 0 ? '+$' : '-$') + Math.abs(potProfit).toFixed(2);
   $('potentialLoss').textContent = '-$' + potLoss.toFixed(2);
+  $('potentialProfit').className = 'rp-value ' + (potProfit >= 0 ? 'green' : 'red');
 
   // Grade
   const gradeEl = $('rrGrade');
@@ -342,6 +418,21 @@ function updateBreakEven() {
   const kelly = winRate - (1 - winRate) / rr;
   $('beKelly').textContent = (kelly * 100).toFixed(1) + '%';
   $('beKelly').style.color = kelly > 0 ? 'var(--green)' : 'var(--red)';
+  
+  // Expose for "Apply Kelly" button
+  state.currentKellyPct = kelly > 0 ? kelly * 100 : 0;
+}
+
+if ($('applyKellyBtn')) {
+  $('applyKellyBtn').addEventListener('click', () => {
+    if (state.currentKellyPct && state.currentKellyPct > 0) {
+      riskSlider.value = Math.min(10, state.currentKellyPct);
+      const bal = parseFloat(accountBalance.value) || 0;
+      riskAmount.value = (bal * state.currentKellyPct / 100).toFixed(2);
+      updateRiskBadge();
+      calculate();
+    }
+  });
 }
 
 // ── TRADE LOG ──────────────────────────────────────────────────────────
@@ -481,6 +572,54 @@ $('calcBtn').addEventListener('click', () => {
   document.querySelector('.panel-results').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 });
 
+// ── CSV EXPORT ─────────────────────────────────────────────────────────
+if ($('exportCsvBtn')) {
+  $('exportCsvBtn').addEventListener('click', () => {
+    if (state.tradeLog.length === 0) {
+      alert("No trades to export.");
+      return;
+    }
+    let csv = "ID,Time,Direction,Lots,SL Pips,TP Pips,Risk $,Risk %,R:R,Status,P/L\n";
+    state.tradeLog.forEach(t => {
+      csv += `${t.id},${t.time},${t.direction},${t.lots},${t.slPips},${t.tpPips},${t.risk},${t.riskPct},${t.rr},${t.status},${t.pl}\n`;
+    });
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.setAttribute('hidden', '');
+    a.setAttribute('href', url);
+    a.setAttribute('download', 'xauusd_trades.csv');
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  });
+}
+
+// ── TRADINGVIEW WIDGET ─────────────────────────────────────────────────
+function initTradingView() {
+  if (typeof TradingView !== 'undefined' && $('tv_chart_container')) {
+    new TradingView.widget({
+      "autosize": true,
+      "symbol": "OANDA:XAUUSD",
+      "interval": "5",
+      "timezone": "Etc/UTC",
+      "theme": "dark",
+      "style": "1",
+      "locale": "en",
+      "enable_publishing": false,
+      "backgroundColor": "#0e1620",
+      "gridColor": "#1e3048",
+      "hide_top_toolbar": false,
+      "hide_legend": false,
+      "save_image": false,
+      "container_id": "tv_chart_container",
+      "support_host": "https://www.tradingview.com"
+    });
+  }
+}
+
 // ── INITIAL CALCULATION ────────────────────────────────────────────────
+loadInputs();
 calculate();
 updateRiskBadge();
+setTimeout(initTradingView, 500);

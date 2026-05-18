@@ -33,6 +33,9 @@
     </div>
   </header>
 
+  <!-- TRADINGVIEW CHART CONTAINER -->
+  <div class="tv-container" id="tv_chart_container"></div>
+
   <main class="main-grid">
 
     <!-- LEFT PANEL: Input -->
@@ -40,9 +43,19 @@
       <div class="panel-label">▸ TRADE PARAMETERS</div>
 
       <div class="input-group">
-        <label class="input-label">ACCOUNT BALANCE <span class="unit-tag">USD</span></label>
+        <label class="input-label" style="display: flex; justify-content: space-between; align-items: center;">
+          ACCOUNT BALANCE
+          <select id="accountCurrency" class="currency-select">
+            <option value="USD">USD</option>
+            <option value="EUR">EUR</option>
+            <option value="GBP">GBP</option>
+            <option value="AUD">AUD</option>
+            <option value="JPY">JPY</option>
+            <option value="CAD">CAD</option>
+          </select>
+        </label>
         <div class="input-wrap">
-          <span class="input-prefix">$</span>
+          <span class="input-prefix" id="currencySymbol">$</span>
           <input type="number" id="accountBalance" class="inp" value="10000" min="0" step="100" />
         </div>
       </div>
@@ -61,6 +74,24 @@
           <div class="slider-labels">
             <span>0.1%</span><span>2.5%</span><span>5%</span><span>10%</span>
           </div>
+        </div>
+      </div>
+
+      <div class="divider-line"></div>
+
+      <div class="input-group">
+        <label class="input-label">COMMISSION PER LOT <span class="unit-tag" id="commUnit">USD</span></label>
+        <div class="input-wrap">
+          <span class="input-prefix" id="commSymbol">$</span>
+          <input type="number" id="commission" class="inp" value="0.00" min="0" step="0.5" />
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label class="input-label">SWAP / OVERNIGHT FEE <span class="unit-tag" id="swapUnit">USD</span></label>
+        <div class="input-wrap">
+          <span class="input-prefix" id="swapSymbol">$</span>
+          <input type="number" id="swapFee" class="inp" value="0.00" step="0.1" />
         </div>
       </div>
 
@@ -249,7 +280,10 @@
             <div class="be-val" id="beEV">--</div>
           </div>
           <div class="be-item">
-            <div class="be-label">Kelly Criterion</div>
+            <div class="be-label" style="display:flex; justify-content:space-between; align-items:center;">
+              Kelly Criterion
+              <button class="kelly-btn" id="applyKellyBtn" title="Apply to Risk %">⚡ APPLY</button>
+            </div>
             <div class="be-val" id="beKelly">--</div>
           </div>
         </div>
@@ -271,7 +305,10 @@
         <div class="trade-log" id="tradeLog">
           <div class="log-empty">No trades logged yet.</div>
         </div>
-        <button class="log-btn secondary" id="clearLogBtn">CLEAR LOG</button>
+        <div style="display:flex; gap:10px;">
+          <button class="log-btn secondary" id="clearLogBtn" style="flex:1;">CLEAR LOG</button>
+          <button class="log-btn secondary" id="exportCsvBtn" style="flex:1;">⬇️ EXPORT CSV</button>
+        </div>
       </div>
 
       <div class="divider-line"></div>
@@ -342,6 +379,7 @@
     </div>
   </section>
 
+  <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

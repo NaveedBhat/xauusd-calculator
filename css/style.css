@@ -786,3 +786,42 @@ body {
 .panel:nth-child(2) { animation-delay: 0.12s; }
 .panel:nth-child(3) { animation-delay: 0.19s; }
 .history-section   { animation: fadeInUp 0.4s ease 0.25s both; }
+
+/* ── NEW ADVANCED FEATURES ── */
+.tv-container {
+  max-width: 1400px;
+  height: 500px;
+  margin: 16px auto 0 auto;
+  padding: 0 24px;
+  border-radius: 10px;
+  overflow: hidden;
+  animation: fadeInUp 0.4s ease both;
+}
+
+.currency-select {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  outline: none;
+  cursor: pointer;
+}
+
+.kelly-btn {
+  background: transparent;
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  padding: 2px 6px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.kelly-btn:hover {
+  background: var(--gold-dim);
+  box-shadow: 0 0 5px var(--gold);
+}
